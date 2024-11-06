@@ -30,8 +30,17 @@ def get_data(handler):
 	# here we fill the response with test data
 	response_data = query_api()
 
-	# here we paint the map
-	# enrich_map(response_data)
+	# get sensor data from api
+	sensors = query_api()
+
+	# get coordinates and pair them with sensors
+	points = get_map_coordinates(sensors)
+
+	# simulate traffic
+	points = move_traffic(points)
+
+	# paint points to map
+	response_data = enrich_map(points)
 
 	# test with list of points
 	test_response_data = [(1, 1), (2, 2), (3, 3)]
