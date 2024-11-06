@@ -8,11 +8,12 @@ HOST = 'localhost'
 PORT = 8000
 
 # define coordinates in Karlsruhe
-# List of GPS coordinates: (latitude, longitude)
+# List of GPS coordinates: (name, latitude, longitude)
 coordinates = [
     # Europaplatz
     ("Europaplatz", 49.0080, 8.3960),
-    # Neighbors of Europaplatz
+    
+	# Neighbors of Europaplatz
     ("Kaiserstraße at Europaplatz", 49.0080, 8.3965),
     ("Karlstraße at Europaplatz", 49.0075, 8.3960),
     ("Douglasstraße at Europaplatz", 49.0085, 8.3955),
@@ -48,7 +49,6 @@ coordinates = [
     ("Schlossgarten", 49.0090, 8.4135),
     ("Rintheimer Straße", 49.0100, 8.4200)
 ]
-
 
 class Sensor:
 	pass
