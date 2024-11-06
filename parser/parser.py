@@ -27,9 +27,11 @@ class SensorRecord:
     lane1: Lane
     lane2: Lane
 
-@dataclass
-class SensorData:
-    records: List[SensorRecord]
+#@dataclass
+#class SensorData:
+#    records: List[SensorRecord]
+
+records = {}
 
 # Recursive function to explore dimensions
 def explore_json_structure(data, depth=0):
@@ -49,7 +51,7 @@ def explore_json_structure(data, depth=0):
 with open(file_path, 'r') as f:
     data = json.load(f)
 
-def parse_sensor_data(file_path = file_path) -> SensorData:
+def parse_sensor_data(file_path = file_path) -> List[SensorRecord]:
     with open(file_path, 'r') as f:
         data = json.load(f)
     records = []
@@ -94,28 +96,50 @@ def parse_sensor_data(file_path = file_path) -> SensorData:
         )
         records.append(sensor_record)
     
-    return SensorData(records=records)
+    return records
 
 
 sensor_data = parse_sensor_data(file_path)
 
-def filter_sensor_data(sensor_data: SensorData, condition_fn: Callable[[SensorRecord], bool]) -> List[SensorRecord]:
-    filtered_records = [record for record in sensor_data.records if condition_fn(record)]
-    return filtered_records
+#arg1: sensor_data (default takes the full data set)
+#args2: filter fn(default will return the given data set)
+def filter_sensor_data(sensor_data: List[SensorRecord], condition_fn: Optional[Callable[[SensorRecord], bool]] = None) -> List[SensorRecord]:
+    if condition_fn is None:
+        return sensor_data
+    filtered = []
+    for record in sensor_data:
+        if condition_fn(record):
+            filtered.append(record)
+
+    return filtered
 
 
-def example_condition(record: SensorRecord) -> bool:
-    # For example, let's say we want to filter records where the count of vehicles in lane1 is greater than 10
-    return any(vehicle.count > 10 for vehicle in record.lane1.classes)
+def not_motorized(record: SensorRecord) -> bool:
+    motorized_names = ["car", "motorbike", "truck"]
+    match = False
+    if (not record.lane1 or (record.lane1.total == 0)) and (not record.lane2 or (record.lane2.total == 0)):
+        return False
+    for lane in [record.lane1, record.lane2]:
+        for vehicle in lane.classes:
+            for name in motorized_names:
+                if vehicle.name == name:
+                    match = True
+    if not match:
+        print(lane)
+        return True
+    return False
 
-filtered_records = filter_sensor_data(sensor_data, example_condition)
+def get_not_motorized(sensor_data: List[SensorRecord]) -> List[SensorRecord]:
+    filtered = filter_sensor_data(sensor_data, not_motorized)
+    return filtered
 
-print(filtered_records)
+filtered = get_not_motorized(sensor_data)
+print(filtered)
 
+@dataclass
+class Date:
+    year: int
+    month: int
+    day: int
+    hour: int
 
-#for record in sensor_data.records:
-#    #print(record._id, record.sensor_id, record.timestamp, record.timezone)
-#    print(f"Lane total: {record.lane1.total}")
-#    for vehicle in record.lane1.classes:
-#        print(f"Class: {vehicle.name}, Count: {vehicle.count}")
-#
