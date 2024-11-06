@@ -1,40 +1,62 @@
 import requests
-import datetime
+import os
+import time
 
-# Der API-Schlüssel sollte hier sicher gesetzt sein
-api_key = "YOUR_API_KEY"
+api_key = os.getenv('API_KEY')
+if api_key is None:
+	raise ValueError("API_KEY ist nicht gesetzt. Bitte die Umgebungsvariable API_KEY festlegen.")
 
-# Konfiguriere die API-URL und Endpunkt
-BASE_URL = "https://datacenter.bernard-gruppe.com/api/v3"
-ENDPOINT = "/moving_traffic/nodes/meta"
 
-# Funktion query_api
-def query_api() -> list:
-	# Datum für den Zeitraum setzen (z.B. letzter Tag)
-	end_date = datetime.datetime.now().strftime('%Y-%m-%d')
-	start_date = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-	# API-Parameter und Header
+# Konfiguriere die API-URL
+BASE_URL = "https://apis.smartcity.hn/bildungscampus/iotplatform/trafficsensor/v1"
+
+# Funktion zum Abfragen von Entity-IDs und deren Werten
+def get_entity_ids(auth_group: str, page: int = 0) -> dict:
+	# Endpoint für die Entity-ID-Anfrage
+	url = f"{BASE_URL}/authGroup/{auth_group}/entityId"
+
+	# Parameter und API-Schlüssel als Query-Parameter setzen
 	params = {
-		'start_date': start_date,
-		'end_date': end_date
+		'x-apikey': api_key,
+		'page': page  # Seite für Paginierung festlegen
 	}
-	headers = {'Authorization': f'Bearer {api_key}'}
+
 	# API-Request senden
 	try:
-		response = requests.get(BASE_URL + ENDPOINT, params=params, headers=headers)
+		response = requests.get(url, params=params)
 		response.raise_for_status()  # Prüft auf Fehler im Response
 	except requests.exceptions.RequestException as e:
 		print(f"Fehler bei der API-Anfrage: {e}")
-		return []
+		return {}
+
 	# Daten verarbeiten
 	data = response.json()
-	traffic_nodes = data.get('traffic_nodes', [])
-	parking_nodes = data.get('parking_nodes', [])
-	# Liste der relevanten Punkte zusammenstellen
-	point_list = []
-	# Beispiel: nur Latitude und Longitude extrahieren
-	for node in traffic_nodes:
-		point_list.append((node['lat'], node['lon']))
-	for node in parking_nodes:
-		point_list.append((node['lat'], node['lon']))
-	return point_list
+
+	# Ausgabe der gesamten Antwort zur Überprüfung
+	print("Vollständige API-Antwort:")
+	print(data)
+
+	# Extrahiere `entities`, falls vorhanden
+	entities = data.get('entities', [])
+	total_pages = data.get('totalPages', 1)
+	total_elements = data.get('totalElements', 0)
+	has_next = data.get('hasNext', False)
+
+	# Liste der relevanten Entitäteninformationen zusammenstellen
+	entity_list = {
+		'entities': entities,
+		'totalPages': total_pages,
+		'totalElements': total_elements,
+		'hasNext': has_next
+	}
+
+	return entity_list
+
+# Testaufruf der Funktion
+if __name__ == "__main__":
+	auth_group = "trafficsensor_devices"  # Beispiel-Authentifizierungsgruppe
+	page = 0  # Startseite für die Paginierung
+
+	entity_data = get_entity_ids(auth_group, page)
+	print("Liste der Entitäten und aktuelle Werte:")
+	print(entity_data)
