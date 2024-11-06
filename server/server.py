@@ -49,23 +49,31 @@ coordinates = [
 ]
 
 
+class Sensor:
+	pass
 
-def query_api() => list[Sensor]:
+class Point:
+	pass
+
+class Map:
+	pass
+
+def query_api() -> list[Sensor]:
 	""" Ilies entry point"""
 	pass
 
 
-def get_map_coordinates(sensors: list[Sensor]) => list[Point]:
+def get_map_coordinates(sensors: list[Sensor]) -> list[Point]:
 	""" Maras entry point"""
-	pass
+	print(len(coordinates))
 
 
-def move_traffic(list[Point]) => list[Point]:
+def move_traffic(points: list[Point]) -> list[Point]:
 	""" Fabians part"""
 	pass
 
 
-def enrich_map(coordinates: list[Point] -> Map):
+def enrich_map(coordinates: list[Point]) -> Map:
 	""" Silvesters entry point"""
 	pass
 
