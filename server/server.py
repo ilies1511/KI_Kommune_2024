@@ -15,7 +15,7 @@ coordinates = [
     ("Kaiserstraße at Europaplatz", 49.0080, 8.3965),
     ("Karlstraße at Europaplatz", 49.0075, 8.3960),
     ("Douglasstraße at Europaplatz", 49.0085, 8.3955),
-    
+
     # Neighbors of "Kaiserstraße at Europaplatz"
     ("Kronenplatz", 49.0085, 8.4030),
     ("Marktplatz", 49.0080, 8.4000),
@@ -23,7 +23,7 @@ coordinates = [
     # Neighbors of "Karlstraße at Europaplatz"
     ("Mühlburger Tor", 49.0065, 8.3930),
     ("Karlstor", 49.0070, 8.3990),
-    
+
     # Neighbors of "Douglasstraße at Europaplatz"
     ("Lammstraße", 49.0087, 8.3925),
     ("Waldstraße", 49.0092, 8.3970),
@@ -48,9 +48,14 @@ coordinates = [
     ("Rintheimer Straße", 49.0100, 8.4200)
 ]
 
-
 class Sensor:
-	pass
+	def __init__(self, entity_id, value, timestamp):
+		self.entity_id = entity_id
+		self.value = value
+		self.timestamp = timestamp
+
+	def __repr__(self):
+		return f"Sensor(entity_id={self.entity_id}, value={self.value}, timestamp={self.timestamp})"
 
 class Point:
 	pass
