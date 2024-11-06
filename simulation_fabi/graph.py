@@ -4,60 +4,109 @@ import random
 import time
 
 class Participant:
+    #adds new participant to graph
     def __init__(self, graph, node_id, type, id=0):
         node = graph.nodes[node_id]
         self.graph = graph
         self.x = node.x
         self.y = node.y
         self.type = type
+        self.cur = node
         self.target = node
         #values to check distances to nodes:
-        self.passed = 0
-        self.distance = 0 #distance to target
+        self.passed_meters = 0
+        self.distance_meters = 0 #distance to target
         self.id = id
+        self.meters_per_sec = 10
+        self.total_dist = 1
+        self.total_meters = 1
 
+    #participant changes destination goal(used when prev destionation was reached)
     def new_target(self):
         possible_targets = self.target.neighbors
         if not possible_targets:
-            self.distance = 0
-            self.passed = 0
+            self.distance_meters = 0
+            self.passed_meters = 0
             return
-        cur = self.target
+        last = self.cur
+        self.cur = self.target
         self.target = random.choice(possible_targets)
-        dx = self.target.x - cur.x
-        dy = self.target.y - cur.y
-        self.distance = math.sqrt(dx * dx + dy * dy) * self.graph.scale
-        self.passed = 0
+        while len(possible_targets) > 1 and last.id == self.target.id:
+            self.target = random.choice(possible_targets)
+        self.x = self.target.x
+        self.y = self.target.y
+        self.passed_meters = 0
+        self.passed_coords = 0
 
+        dx = self.target.x - self.cur.x
+        dy = self.target.y - self.cur.y
+        self.dx_coords = dx
+        self.dy_coords = dy
+        total_distance = math.sqrt(dx * dx + dy * dy)
+        if total_distance != 0:
+            self.unit_dx = dx / total_distance
+            self.unit_dy = dy / total_distance
+        else:
+            self.unit_dx = 0
+            self.unit_dy = 0
+        #get a some what representation in meters for this area
+        dx *= 73
+        dy *= 111.32
+        self.distance_meters = math.sqrt(dx * dx + dy * dy)
+        self.distance_meters *= 160000
+        self.total_meters = self.distance_meters
+
+    #participant moves the amount of his speed * time
     def move(self, time=1):
-        if self.distance <= 0:
+        if self.distance_meters <= 0:
             self.new_target()
-        if self.distance <= 0:
+        if self.distance_meters <= 0:
             return
-        self.distance -= time
-        self.passed += time
-        if self.distance < 0:
-            self.distance = 0
+        self.distance_meters -= time * self.meters_per_sec
+        self.passed_meters += time * self.meters_per_sec
+
+        if self.distance_meters < 0:
+            self.distance_meters = 0
+            self.x = self.target.x
+            self.y = self.target.y
+        else:
+            self.x = self.cur.x + self.dx_coords * (self.passed_meters / self.total_meters)
+            self.y = self.cur.y + self.dy_coords * (self.passed_meters / self.total_meters)
+
+        print("distance to last node:", self.passed_meters)
+        print("distance to next node:", self.distance_meters)
+        
+        print("x:", self.x, ", y:", self.y)
 
 
 #(sensor)
+#use node.connect() to create edges in a graph
+#edges go in both directions
 class Node:
-    def __init__(self, graph, id, x, y):
+    def __init__(self, graph, id, x, y, is_sensor=True):
         self.graph = graph
         self.x = x
         self.y = y
         self.id = id
         self.neighbors = []
         self.graph.nodes[id] = self
+        self.is_sensor = is_sensor
 
-#retus a list of the participants in the radius
-    def detect(self, radius=1):
+    #if the node is not a sensor returns an empty list
+    #returns a list of the participants in the radius if it is a sensor
+    #currently a sensor has a 360 fov
+    def detect(self, radius=10):
         detects = []
+        if not self.is_sensor:
+            return detects
         for participant in self.graph.participants:
-            if participant.target.id == self.id:
+            if participant.target.id == self.id and participant.distance_meters <= radius:
+                detects.append(participant)
+            elif participant.cur.id == self.id and participant.passed_meters <= radius:
                 detects.append(participant)
         return detects
 
+    #creates an edge between two nodes
     def connect(self, node):
         if any(neighbor.id == node.id for neighbor in self.neighbors):
             return
@@ -65,18 +114,23 @@ class Node:
         node.neighbors.append(self)
 
 class Graph:
-    def __init__(self, scale=1):
-        self.scale = scale
+    #set the speed to control the speed of the simulation
+    #(1-> 1simulation sec/1real sec)
+    #too fast speeds will be buggy for small maps
+    def __init__(self, speed=1):
+        self.speed = speed
         self.nodes = {}
         self.participants = []
 
     def add_node(self, new_node):
         self.nodes[new_node.id] = new_node
 
-    def pass_time(self, time=1):
+    #advance simulation by 1 simulation second
+    def pass_time(self):
         for participant in self.participants:
-            participant.move(time)
+            participant.move(self.speed)
 
+    #prints the current cars in sensor ranges
     def print_detects(self):
         for node in self.nodes.values():
             detects = node.detect()
@@ -138,9 +192,12 @@ graph.nodes["Karlstraße at Europaplatz"].connect(graph.nodes["Mühlburger Tor"]
 graph.nodes["Kaiserstraße at Europaplatz"].connect(graph.nodes["Karlstor"])
 
 
+i = 1
+while i < 2:
+    car = Participant(graph, "Europaplatz", "car", i)
+    graph.participants.append(car)
+    i += 1
 
-car = Participant(graph, "Europaplatz", "car", 1)
-graph.participants.append(car)
 graph.print_detects()
 
 passed_time = 0
