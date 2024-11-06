@@ -13,13 +13,12 @@ class Participant:
         self.type = type
         self.cur = node
         self.target = node
-        #values to check distances to nodes:
-        self.passed_meters = 0
+        self.passed_meters = 0 #distance from start
         self.distance_meters = 0 #distance to target
-        self.id = id
+        self.id = id #some id to ident participants
         self.meters_per_sec = 10
-        self.total_dist = 1
-        self.total_meters = 1
+        self.total_dist = 1 #some init val to avoid zero div
+        self.total_meters = 1#some init val to avoid zero div
 
     #participant changes destination goal(used when prev destionation was reached)
     def new_target(self):
@@ -42,7 +41,7 @@ class Participant:
         dy = self.target.y - self.cur.y
         self.dx_coords = dx
         self.dy_coords = dy
-        total_distance = math.sqrt(dx * dx + dy * dy)
+        total_distance = math.sqrt(dx * dx + dy * dy) #edge len
         if total_distance != 0:
             self.unit_dx = dx / total_distance
             self.unit_dy = dy / total_distance
@@ -53,17 +52,17 @@ class Participant:
         dx *= 73
         dy *= 111.32
         self.distance_meters = math.sqrt(dx * dx + dy * dy)
-        self.distance_meters *= 160000
+        self.distance_meters *= 1600
         self.total_meters = self.distance_meters
 
     #participant moves the amount of his speed * time
-    def move(self, time=1):
+    def move(self, time=1, speed_scala=1):
         if self.distance_meters <= 0:
             self.new_target()
         if self.distance_meters <= 0:
             return
-        self.distance_meters -= time * self.meters_per_sec
-        self.passed_meters += time * self.meters_per_sec
+        self.distance_meters -= time * self.meters_per_sec * speed_scala
+        self.passed_meters += time * self.meters_per_sec * speed_scala
 
         if self.distance_meters < 0:
             self.distance_meters = 0
@@ -126,19 +125,19 @@ class Graph:
         self.nodes[new_node.id] = new_node
 
     #advance simulation by 1 simulation second
-    def pass_time(self):
+    def pass_time(self, time=1):
         for participant in self.participants:
-            participant.move(self.speed)
+            participant.move(time, self.speed)
 
     #prints the current cars in sensor ranges
-    def print_detects(self):
+    def print_detects(self, range=1):
         for node in self.nodes.values():
-            detects = node.detect()
+            detects = node.detect(range)
             for participant in detects:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
 
 
-graph = Graph(0.010)
+graph = Graph()
 
 coordinates = [
     # Europaplatz
@@ -203,16 +202,8 @@ graph.print_detects()
 passed_time = 0
 while 1:
     graph.pass_time()
-    graph.print_detects()
+    graph.print_detects(10)
     passed_time += 1
     print("passed time: ", passed_time)
     time.sleep(1)
-
-
-
-
-
-
-
-
 
