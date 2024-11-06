@@ -1,70 +1,62 @@
 import requests
-import matplotlib.pyplot as plt
-import pandas as pd
+import os
+import time
 
-# Basis-URL der API
-BASE_URL = "https://datacenter.bernard-gruppe.com/api/v3"
-ENDPOINT = "/moving_traffic/nodes/meta"
-
-# Zusammengesetzte URL für den API-Endpunkt
-url = BASE_URL + ENDPOINT
-
-# Beispiel-Parameter: Datum für den Zeitraum
-params = {
-    'start_date': '2024-11-01',  # Startdatum
-    'end_date': '2024-11-06'     # Enddatum
-}
-
-# Dein API-Schlüssel
-api_key = ""
-
-# Header mit API-Schlüssel (falls erforderlich)
-headers = {'Authorization': f'Bearer {api_key}'}
-# headers = {'Authorization': 'Bearer izi_code'}
+api_key = os.getenv('API_KEY')
+if api_key is None:
+	raise ValueError("API_KEY ist nicht gesetzt. Bitte die Umgebungsvariable API_KEY festlegen.")
 
 
+# Konfiguriere die API-URL
+BASE_URL = "https://apis.smartcity.hn/bildungscampus/iotplatform/trafficsensor/v1"
 
-# API-Anfrage stellen
-response = requests.get(url, params=params, headers=headers)
+# Funktion zum Abfragen von Entity-IDs und deren Werten
+def get_entity_ids(auth_group: str, page: int = 0) -> dict:
+	# Endpoint für die Entity-ID-Anfrage
+	url = f"{BASE_URL}/authGroup/{auth_group}/entityId"
 
-# Überprüfung der Antwort
-if response.status_code == 200:
-    data = response.json()  # Antwort in JSON umwandeln
-    print("Daten erfolgreich abgerufen:")
-    print(data)
+	# Parameter und API-Schlüssel als Query-Parameter setzen
+	params = {
+		'x-apikey': api_key,
+		'page': page  # Seite für Paginierung festlegen
+	}
 
-    # Umwandeln der Daten in ein DataFrame (wenn die Antwort eine Liste von Nodes enthält)
-    traffic_nodes = data.get('traffic_nodes', [])
-    parking_nodes = data.get('parking_nodes', [])
+	# API-Request senden
+	try:
+		response = requests.get(url, params=params)
+		response.raise_for_status()  # Prüft auf Fehler im Response
+	except requests.exceptions.RequestException as e:
+		print(f"Fehler bei der API-Anfrage: {e}")
+		return {}
 
-    # Beispiel: Verkehrsknoten und Parkknoten visualisieren
-    if traffic_nodes:
-        traffic_df = pd.DataFrame(traffic_nodes)
-        print(traffic_df.head())
+	# Daten verarbeiten
+	data = response.json()
 
-        # Visualisierung der Verkehrsknoten nach Startdatum (Beispiel)
-        plt.plot(traffic_df['start_date'], traffic_df['lat'], marker='o', label='Verkehrsknoten')
-        plt.xlabel('Startdatum')
-        plt.ylabel('Latitude')
-        plt.title('Verkehrsknoten über die Zeit')
-        plt.xticks(rotation=45)
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+	# Ausgabe der gesamten Antwort zur Überprüfung
+	print("Vollständige API-Antwort:")
+	print(data)
 
-    if parking_nodes:
-        parking_df = pd.DataFrame(parking_nodes)
-        print(parking_df.head())
+	# Extrahiere `entities`, falls vorhanden
+	entities = data.get('entities', [])
+	total_pages = data.get('totalPages', 1)
+	total_elements = data.get('totalElements', 0)
+	has_next = data.get('hasNext', False)
 
-        # Visualisierung der Parkknoten (Beispiel)
-        plt.plot(parking_df['start_date'], parking_df['capacity'], marker='x', label='Parkknoten')
-        plt.xlabel('Startdatum')
-        plt.ylabel('Kapazität')
-        plt.title('Parkknoten Kapazität über die Zeit')
-        plt.xticks(rotation=45)
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+	# Liste der relevanten Entitäteninformationen zusammenstellen
+	entity_list = {
+		'entities': entities,
+		'totalPages': total_pages,
+		'totalElements': total_elements,
+		'hasNext': has_next
+	}
 
-else:
-    print(f"Fehler bei der Anfrage: {response.status_code} - {response.text}")
+	return entity_list
+
+# Testaufruf der Funktion
+if __name__ == "__main__":
+	auth_group = "trafficsensor_devices"  # Beispiel-Authentifizierungsgruppe
+	page = 0  # Startseite für die Paginierung
+
+	entity_data = get_entity_ids(auth_group, page)
+	print("Liste der Entitäten und aktuelle Werte:")
+	print(entity_data)
