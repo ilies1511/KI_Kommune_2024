@@ -7,12 +7,17 @@ HOST = 'localhost'
 PORT = 8000
 
 
-def query_api():
+def query_api() => list:
 	""" Ilies entry point"""
 	pass
 
 
-def enrich_map(point_list):
+def query_json() => list:
+	""" Fabians entry point"""
+	pass
+
+
+def enrich_map(point_list: list):
 	""" Silvesters entry point"""
 	pass
 
