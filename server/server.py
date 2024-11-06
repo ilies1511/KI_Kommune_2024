@@ -6,6 +6,49 @@ import json
 HOST = 'localhost'
 PORT = 8000
 
+# define coordinates in Karlsruhe
+# List of GPS coordinates: (latitude, longitude)
+coordinates = [
+    # Europaplatz
+    ("Europaplatz", 49.0080, 8.3960),
+    # Neighbors of Europaplatz
+    ("Kaiserstraße at Europaplatz", 49.0080, 8.3965),
+    ("Karlstraße at Europaplatz", 49.0075, 8.3960),
+    ("Douglasstraße at Europaplatz", 49.0085, 8.3955),
+    
+    # Neighbors of "Kaiserstraße at Europaplatz"
+    ("Kronenplatz", 49.0085, 8.4030),
+    ("Marktplatz", 49.0080, 8.4000),
+
+    # Neighbors of "Karlstraße at Europaplatz"
+    ("Mühlburger Tor", 49.0065, 8.3930),
+    ("Karlstor", 49.0070, 8.3990),
+    
+    # Neighbors of "Douglasstraße at Europaplatz"
+    ("Lammstraße", 49.0087, 8.3925),
+    ("Waldstraße", 49.0092, 8.3970),
+
+    # Durlacher Tor
+    ("Durlacher Tor", 49.0090, 8.4180),
+    # Neighbors of Durlacher Tor
+    ("Kaiserstraße at Durlacher Tor", 49.0090, 8.4175),
+    ("Durlacher Allee at Durlacher Tor", 49.0095, 8.4185),
+    ("Karl-Wilhelm-Straße at Durlacher Tor", 49.0085, 8.4180),
+
+    # Neighbors of "Kaiserstraße at Durlacher Tor"
+    ("Gottesauer Platz", 49.0090, 8.4240),
+    ("Tullastraße", 49.0092, 8.4295),
+
+    # Neighbors of "Durlacher Allee at Durlacher Tor"
+    ("Ostring", 49.0100, 8.4320),
+    ("Durlach Auer Straße", 49.0110, 8.4365),
+
+    # Neighbors of "Karl-Wilhelm-Straße at Durlacher Tor"
+    ("Schlossgarten", 49.0090, 8.4135),
+    ("Rintheimer Straße", 49.0100, 8.4200)
+]
+
+
 
 def query_api() => list[Sensor]:
 	""" Ilies entry point"""
