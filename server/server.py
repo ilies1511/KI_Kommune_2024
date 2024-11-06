@@ -7,9 +7,24 @@ HOST = 'localhost'
 PORT = 8000
 
 
+def query_api():
+	""" Ilies entry point"""
+	pass
+
+
+def enrich_map(point_list):
+	""" Silvesters entry point"""
+	pass
+
 def get_data(handler):
 	# here we fill the response with test data
-	response_data = [(1, 1), (2, 2), (3, 3)]
+	response_data = query_api()
+
+	# here we paint the map
+	enrich_map(response_data)
+
+	# test with list of points
+	test_response_data = [(1, 1), (2, 2), (3, 3)]
 
 	# Send response status
 	handler.send_response(200)
@@ -19,7 +34,7 @@ def get_data(handler):
 	handler.end_headers()
 
 	# Write JSON response
-	handler.wfile.write(json.dumps(response_data).encode())
+	handler.wfile.write(json.dumps(test_response_data).encode())
 
 class CustomHTTPRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
