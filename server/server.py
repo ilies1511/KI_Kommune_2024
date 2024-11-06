@@ -49,13 +49,17 @@ coordinates = [
 ]
 
 class Sensor:
-	def __init__(self, entity_id, value, timestamp):
-		self.entity_id = entity_id
-		self.value = value
-		self.timestamp = timestamp
+	def __init__(self, entity_id, value, timestamp, count, sensor_type):
+		self.entity_id = entity_id  # Die eindeutige ID des Sensors
+		self.value = value  # Der Wert (z.B. gemessene Geschwindigkeit oder Anzahl der Fahrzeuge)
+		self.timestamp = timestamp  # Der Zeitstempel der Messung
+		self.count = count  # Die Anzahl des Typs (z.B. 5 Autos)
+		self.type = sensor_type  # Der Typ des Objekts (z.B. "Car", "Bus", "Bike")
 
 	def __repr__(self):
-		return f"Sensor(entity_id={self.entity_id}, value={self.value}, timestamp={self.timestamp})"
+		# Gibt eine benutzerfreundliche Darstellung des Sensor-Objekts zurück
+		return (f"Sensor(entity_id={self.entity_id}, value={self.value}, "
+				f"timestamp={self.timestamp}, count={self.count}, type={self.type})")
 
 class Point:
 	pass
