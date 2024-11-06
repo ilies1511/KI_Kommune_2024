@@ -1,0 +1,34 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map with Leaflet.js</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 600px; width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>The traffic in Karlsruhe at the moment</h1>
+    <h3>Watch people, cars and bikes in real time</h3>
+
+    <div id="test"></div>
+
+    <script>
+        let test = document.getElementById("test");
+
+        // Fetch data from the backend and plot points
+        fetch("/data")
+            .then(response => {return response.json()})
+            .then(data => {
+                console.log(data);
+                data.forEach(point => {
+                    test.innerHTML += `${point}` + "<br>";
+                });
+            })
+            .catch(error => console.error("Error loading data:", error));
+    </script>
+</body>
+</html>
