@@ -7,17 +7,22 @@ HOST = 'localhost'
 PORT = 8000
 
 
-def query_api() => list:
+def query_api() => list[Sensor]:
 	""" Ilies entry point"""
 	pass
 
 
-def query_json() => list:
-	""" Fabians entry point"""
+def get_map_coordinates(sensors: list[Sensor]) => list[Point]:
+	""" Maras entry point"""
 	pass
 
 
-def enrich_map(point_list: list):
+def move_traffic(list[Point]) => list[Point]:
+	""" Fabians part"""
+	pass
+
+
+def enrich_map(coordinates: list[Point] -> Map):
 	""" Silvesters entry point"""
 	pass
 
@@ -26,7 +31,7 @@ def get_data(handler):
 	response_data = query_api()
 
 	# here we paint the map
-	enrich_map(response_data)
+	# enrich_map(response_data)
 
 	# test with list of points
 	test_response_data = [(1, 1), (2, 2), (3, 3)]
