@@ -11,7 +11,7 @@ HOST = 'localhost'
 PORT = 8000
 
 graph = Graph()
-
+car_icon_url = "car.png"
 
 class Sensor:
 	def __init__(self, entity_id, value, timestamp, count, sensor_type):
@@ -77,11 +77,9 @@ def enrich_map():
 		color = "black"
 		if participant["TYPE"] == "car":
 			color = "red"
-		folium.CircleMarker(
+		folium.Marker(
 			location=[participant["X"], participant["Y"]],
-			radius=5,
-			color=color,
-			fill=False
+			icon=folium.CustomIcon(car_icon_url, icon_size=(25, 25))
 		).add_to(my_map)
 
 	# Get the HTML representation as a string
