@@ -117,49 +117,25 @@ class Graph:
     #set the speed to control the speed of the simulation
     #(1-> 1simulation sec/1real sec)
     #too fast speeds will be buggy for small maps
-    def __init__(self, speed=1, car_count=10, x=49.007706, y=8.394864, radius_meters=400):
+    def __init__(self, participants=[("car", 10)], speed=1,
+                 #where is the simulation:
+                 x=49.007706, y=8.394864, radius_meters=400):
         self.speed = speed
         self.nodes = {}
         self.participants = []
 
         self.add_intersections(x, y, radius_meters)
-        #coordinates = [
-        #    ("Karlstraße-Amalienstraße", 49.0078120, 8.3948930),
-        #    #Karlstraße-Amalienstraße connetcts to:
-        #    ("Karlstraße-Waldstraße", 49.008510, 8.394944),
-        #    ("Waldstraße-Amalienstraße", 49.008081, 8.394169),
-        #    ("Karlstrase-Sophienstraße", 49.005922, 8.394496),
-        #    #Waldstraße-Amalienstraße connects to:
-        #    ("Waldstraße-Sophienstraße", 49.006768, 8.391945),
-        #    ("Hirschstraße-Amalienstraße", 49.008929, 8.391642),
-        #    ("Leopoldstraße-Amalienstraße", 49.009607, 8.389724),
-        #    #Waldstraße-Sophienstraße connects to
-        #    ("Hirschstraße-Sophienstraße", 49.006939, 8.391441),
-        #    ("Leopoldstraße-Sophienstraße", 49.007509, 8.389550),
-        #]
-
-        #for id, lat, lon in coordinates:
-        #    self.nodes[id] = Node(self, id, lat, lon)
-        #self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstraße-Waldstraße"])
-
-        #self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstraße-Waldstraße"])
-        #self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Waldstraße-Amalienstraße"])
-        #self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstrase-Sophienstraße"])
-
-        #self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Waldstraße-Sophienstraße"])
-        #self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Hirschstraße-Amalienstraße"])
-        #self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Leopoldstraße-Amalienstraße"])
-
-        #self.nodes["Waldstraße-Sophienstraße"].connect(self.nodes["Hirschstraße-Sophienstraße"])
-        #self.nodes["Waldstraße-Sophienstraße"].connect(self.nodes["Leopoldstraße-Sophienstraße"])
-
-        i = 0
         node_ids = list(self.nodes.keys())
-        while i < car_count:
-            random_node_id = random.choice(node_ids)
-            car = Participant(self, random_node_id, "car", i)
-            self.participants.append(car)
-            i += 1
+        id = 0
+        for participant in participants:
+            type, count = participant
+            i = 0
+            while i < count:
+                random_node_id = random.choice(node_ids)
+                participant_obj = Participant(self, random_node_id, type, id)
+                id += 1
+                i += 1
+                self.participants.append(participant_obj)
 
     def add_intersections(self, center_lat, center_lon, radius_meters=400):
         G = ox.graph_from_point((center_lat, center_lon), dist=radius_meters, network_type='drive')
@@ -261,9 +237,15 @@ class Graph:
             for participant in detects:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
 
+def get_large_graph():
+    participant_list = [("car", 400), ("truck", 20), ("foot", 40), ("bicycle", 40)]
+    graph = Graph(participants=participant_list, x=49.00587, y=8.40162, radius_meters=3000)
+    return graph
+
 
 if __name__ == '__main__':
-    graph = Graph()
+    #graph = Graph()
+    graph = get_large_graph()
     graph.print_detects()
     passed_time = 0
     while 1:
