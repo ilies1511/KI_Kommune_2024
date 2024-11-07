@@ -89,12 +89,12 @@ graph = Graph(0.010)
 coordinates = [
     # Europaplatz
     ("Europaplatz", 49.0080, 8.3960),
-    
+
 	# Neighbors of Europaplatz
     ("Kaiserstraße at Europaplatz", 49.0080, 8.3965),
     ("Karlstraße at Europaplatz", 49.0075, 8.3960),
     ("Douglasstraße at Europaplatz", 49.0085, 8.3955),
-    
+
     # Neighbors of "Kaiserstraße at Europaplatz"
     ("Kronenplatz", 49.0085, 8.4030),
     ("Marktplatz", 49.0080, 8.4000),
@@ -102,7 +102,7 @@ coordinates = [
     # Neighbors of "Karlstraße at Europaplatz"
     ("Mühlburger Tor", 49.0065, 8.3930),
     ("Karlstor", 49.0070, 8.3990),
-    
+
     # Neighbors of "Douglasstraße at Europaplatz"
     ("Lammstraße", 49.0087, 8.3925),
     ("Waldstraße", 49.0092, 8.3970),
@@ -137,7 +137,21 @@ graph.nodes["Europaplatz"].connect(graph.nodes["Douglasstraße at Europaplatz"])
 graph.nodes["Karlstraße at Europaplatz"].connect(graph.nodes["Mühlburger Tor"])
 graph.nodes["Kaiserstraße at Europaplatz"].connect(graph.nodes["Karlstor"])
 
+graph.nodes["Douglasstraße at Europaplatz"].connect(graph.nodes["Lammstraße"])
+graph.nodes["Douglasstraße at Europaplatz"].connect(graph.nodes["Waldstraße"])
 
+graph.nodes["Durlacher Tor"].connect(graph.nodes["Kaiserstraße at Durlacher Tor"])
+graph.nodes["Durlacher Tor"].connect(graph.nodes["Durlacher Allee at Durlacher Tor"])
+graph.nodes["Durlacher Tor"].connect(graph.nodes["Karl-Wilhelm-Straße at Durlacher Tor"])
+
+graph.nodes["Kaiserstraße at Durlacher Tor"].connect(graph.nodes["Gottesauer Platz"])
+graph.nodes["Kaiserstraße at Durlacher Tor"].connect(graph.nodes["Tullastraße"])
+
+graph.nodes["Durlacher Allee at Durlacher Tor"].connect(graph.nodes["Ostring"])
+graph.nodes["Durlacher Allee at Durlacher Tor"].connect(graph.nodes["Durlach Auer Straße"])
+
+graph.nodes["Karl-Wilhelm-Straße at Durlacher Tor"].connect(graph.nodes["Schlossgarten"])
+graph.nodes["Karl-Wilhelm-Straße at Durlacher Tor"].connect(graph.nodes["Rintheimer Straße"])
 
 car = Participant(graph, "Europaplatz", "car", 1)
 graph.participants.append(car)
