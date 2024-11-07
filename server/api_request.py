@@ -20,6 +20,7 @@ if api_key is None:
 # Konfiguriere die API-URL
 BASE_URL = "https://apis.smartcity.hn/bildungscampus/iotplatform/trafficsensor/v1"
 
+auth_group = "trafficsensor_devices"
 
 def query_api(auth_group: str, page: int = 0) -> list:
 	# Endpoint für die Entity-ID-Anfrage
