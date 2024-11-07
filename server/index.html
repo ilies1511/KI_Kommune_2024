@@ -29,6 +29,12 @@
                 iconUrl = "car.png";
             if (coord.TYPE == "foot")
                 iconUrl = "foot.png";
+            if (coord.TYPE == "truck")
+                iconUrl = "truck.png"; 
+            if (coord.TYPE == "bycicle")
+                iconUrl = "bicycle.png";  
+            if (coord.TYPE == "motor_bike")
+                iconUrl = "motor_bike.png";
             const icon = L.icon({
                 iconUrl: iconUrl,
                 iconSize: [25, 25],
