@@ -128,6 +128,7 @@ class Graph:
         self.participants = []
         self.center_x = x
         self.center_y = y
+        self.day_time = 0
 
         self.add_intersections(x, y, radius_meters)
         self.compute_node_distances_and_weights()
@@ -245,6 +246,8 @@ class Graph:
 
     #advance simulation by 1 simulation second
     def pass_time(self, time=1):
+        self.time += time
+        self.time %= 24
         for participant in self.participants:
             participant.move(time, self.speed)
 
@@ -257,7 +260,7 @@ class Graph:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
 
 def get_large_graph():
-    participant_list = [("car", 4000, 10), ("truck", 200, 10), ("foot", 400, 1), ("bicycle", 400, 2), ("motor_bike", 400, 10)]
+    participant_list = [("car", 400, 10), ("truck", 20, 10), ("foot", 40, 1), ("bicycle", 40, 2), ("motor_bike", 40, 10)]
     graph = Graph(speed=5, participants=participant_list, x=49.00587, y=8.40162, radius_meters=3000)
     return graph
 
