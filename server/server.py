@@ -1,54 +1,17 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import json
 from dataclasses import dataclass
+import folium
+from typing import List
+from graph import Graph
 
 
 # Define the server address and port
 HOST = 'localhost'
 PORT = 8000
 
-# define coordinates in Karlsruhe
-# List of GPS coordinates: (name, latitude, longitude)
-coordinates = [
-    # Europaplatz
-    ("Europaplatz", 49.0080, 8.3960),
-    
-	# Neighbors of Europaplatz
-    ("Kaiserstraße at Europaplatz", 49.0080, 8.3965),
-    ("Karlstraße at Europaplatz", 49.0075, 8.3960),
-    ("Douglasstraße at Europaplatz", 49.0085, 8.3955),
+graph = Graph()
 
-    # Neighbors of "Kaiserstraße at Europaplatz"
-    ("Kronenplatz", 49.0085, 8.4030),
-    ("Marktplatz", 49.0080, 8.4000),
-
-    # Neighbors of "Karlstraße at Europaplatz"
-    ("Mühlburger Tor", 49.0065, 8.3930),
-    ("Karlstor", 49.0070, 8.3990),
-
-    # Neighbors of "Douglasstraße at Europaplatz"
-    ("Lammstraße", 49.0087, 8.3925),
-    ("Waldstraße", 49.0092, 8.3970),
-
-    # Durlacher Tor
-    ("Durlacher Tor", 49.0090, 8.4180),
-    # Neighbors of Durlacher Tor
-    ("Kaiserstraße at Durlacher Tor", 49.0090, 8.4175),
-    ("Durlacher Allee at Durlacher Tor", 49.0095, 8.4185),
-    ("Karl-Wilhelm-Straße at Durlacher Tor", 49.0085, 8.4180),
-
-    # Neighbors of "Kaiserstraße at Durlacher Tor"
-    ("Gottesauer Platz", 49.0090, 8.4240),
-    ("Tullastraße", 49.0092, 8.4295),
-
-    # Neighbors of "Durlacher Allee at Durlacher Tor"
-    ("Ostring", 49.0100, 8.4320),
-    ("Durlach Auer Straße", 49.0110, 8.4365),
-
-    # Neighbors of "Karl-Wilhelm-Straße at Durlacher Tor"
-    ("Schlossgarten", 49.0090, 8.4135),
-    ("Rintheimer Straße", 49.0100, 8.4200)
-]
 
 class Sensor:
 	def __init__(self, entity_id, value, timestamp, count, sensor_type):
@@ -71,6 +34,7 @@ class Point:
 class Map:
 	pass
 
+
 def query_api() -> list[Sensor]:
 	""" Ilies entry point"""
 	pass
@@ -79,8 +43,8 @@ def query_api() -> list[Sensor]:
 def get_map_coordinates(sensors: list[Sensor]) -> list[Point]:
 	""" Maras entry point"""
 	# check for right format of parameters
-	if len(sensors) != len(coordinates):
-		print("Error: Sensor list length does not equal coordinates list length")
+	# if len(sensors) != len(coordinates):
+	# 	print("Error: Sensor list length does not equal coordinates list length")
 	
 	# produce list of points
 	points = [Point(coordinates[i], sensors[i]) for i in range(len(sensors))]
@@ -88,14 +52,43 @@ def get_map_coordinates(sensors: list[Sensor]) -> list[Point]:
 	# return points list
 	return points
 
-def move_traffic(points: list[Point]) -> list[Point]:
-	""" Fabians part"""
-	pass
 
-
-def enrich_map(points: list[Point]) -> Map:
+def enrich_map():
 	""" Silvesters entry point"""
-	pass
+
+	# test
+	sensor_list = graph.get_sensor_list()
+	coordinates = [[coordinate["X"], coordinate["Y"]] for coordinate, _ in sensor_list]
+
+	my_map = folium.Map(location=coordinates[0], zoom_start=15)
+
+	# Add all coordinates as CircleMarkers
+	for coord in coordinates:
+		folium.CircleMarker(
+			location=coord,
+			radius=5,
+			color="blue",
+			fill=True,
+			fill_color="blue"
+		).add_to(my_map)
+
+	# add traffic members
+	for participant in graph.get_participants_positions():
+		color = "black"
+		if participant["TYPE"] == "car":
+			color = "red"
+		folium.CircleMarker(
+			location=[participant["X"], participant["Y"]],
+			radius=5,
+			color=color,
+			fill=False
+		).add_to(my_map)
+
+	# Get the HTML representation as a string
+	map_html = my_map.get_root().render()
+
+	return map_html
+
 
 def get_data(handler):
 	# here we fill the response with test data
@@ -105,16 +98,16 @@ def get_data(handler):
 	sensors = query_api()
 
 	# get coordinates and pair them with sensors
-	points = get_map_coordinates(sensors)
+	# points = get_map_coordinates(sensors)
 
 	# simulate traffic
-	points = move_traffic(points)
+	graph.pass_time()
 
 	# paint points to map
-	response_data = enrich_map(points)
+	response_data = enrich_map()
 
-	# test with list of points
-	test_response_data = [(1, 1), (2, 2), (3, 3)]
+	# print sensor data
+	graph.print_sensor_data()
 
 	# Send response status
 	handler.send_response(200)
@@ -124,7 +117,7 @@ def get_data(handler):
 	handler.end_headers()
 
 	# Write JSON response
-	handler.wfile.write(json.dumps(test_response_data).encode())
+	handler.wfile.write(response_data.encode('utf-8'))
 
 class CustomHTTPRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):

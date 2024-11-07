@@ -14,21 +14,24 @@
     <h1>The traffic in Karlsruhe at the moment</h1>
     <h3>Watch people, cars and bikes in real time</h3>
 
-    <div id="test"></div>
+    <iframe id="map" width="100%" height="500px" frameborder="0"></iframe>
 
     <script>
-        let test = document.getElementById("test");
+        let iframe = document.getElementById("map");
 
-        // Fetch data from the backend and plot points
+        setInterval(() => {
+        // Fetch map
         fetch("/data")
-            .then(response => {return response.json()})
-            .then(data => {
-                console.log(data);
-                data.forEach(point => {
-                    test.innerHTML += `${point}` + "<br>";
-                });
+            .then(response => {
+                return response.text();
+            })
+            .then(html => {
+                iframe.contentDocument.open();
+                iframe.contentDocument.write(html);
+                iframe.contentDocument.close();     
             })
             .catch(error => console.error("Error loading data:", error));
+        }, 1000);
     </script>
 </body>
 </html>
