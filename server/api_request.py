@@ -73,7 +73,7 @@ def query_api(auth_group: str, page: int = 0) -> list:
 #     page = 0  # Startseite für die Paginierung
 
 #     # Sensoren von der API abrufen
-#     sensors = get_entity_ids(auth_group, page)
+#     sensors = query_api(auth_group, page)
 #     # Sensor-Objekte ausgeben
 #     print("Liste der Sensoren:")
 #     for sensor in sensors:
