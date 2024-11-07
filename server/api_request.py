@@ -3,27 +3,14 @@ import os
 import time
 import sys
 import json
+from server import Sensor
 
 #
-# Füge das übergeordnete Verzeichnis zum sys.path hinzu
+# Uebergeordnete Verzeichnis zum sys.path
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'server')))
 
 # # Jetzt sollte der Import funktionieren
 # from server.server import Sensor
-
-# class Sensor:
-# 	def __init__(self, entity_id, value, timestamp, count, sensor_type):
-# 		self.entity_id = entity_id  # Die eindeutige ID des Sensors
-# 		self.value = value  # Der Wert (z.B. gemessene Geschwindigkeit oder Anzahl der Fahrzeuge)
-# 		self.timestamp = timestamp  # Der Zeitstempel der Messung
-# 		self.count = count  # Die Anzahl des Typs (z.B. 5 Autos)
-# 		self.type = sensor_type  # Der Typ des Objekts (z.B. "Car", "Bus", "Bike")
-
-# 	def __repr__(self):
-# 		# Gibt eine benutzerfreundliche Darstellung des Sensor-Objekts zurück
-# 		return (f"Sensor(entity_id={self.entity_id}, value={self.value}, "
-# 				f"timestamp={self.timestamp}, count={self.count}, type={self.type})")
-
 
 api_key = os.getenv('API_KEY')
 if api_key is None:
@@ -85,7 +72,6 @@ if __name__ == "__main__":
 
     # Sensoren von der API abrufen
     sensors = get_entity_ids(auth_group, page)
-
     # Sensor-Objekte ausgeben
     print("Liste der Sensoren:")
     for sensor in sensors:
