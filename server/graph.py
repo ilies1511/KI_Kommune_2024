@@ -6,88 +6,11 @@ import time
 import diagram
 import numpy as np
 
-def generate_active_time_ranges():
-    total_active_hours = 8
-    max_ranges = 3
-    hours_in_day = 24
-
-    hour_probabilities = np.array([
-        0.05,  # 0 AM
-        0.09,  # 1 AM
-        0.1,  # 2 AM
-        0.15,  # 3 AM
-        0.2,  # 4 AM
-        0.3,  # 5 AM
-        0.4,  # 6 AM - Peak starts
-        0.5,   # 7 AM
-        0.6,  # 8 AM
-        0.5,  # 9 AM - Peak ends
-        0.4,  # 10 AM
-        0.3,  # 11 AM
-        0.35,  # 12 PM
-        0.4,  # 1 PM - Local minimum
-        0.3,  # 2 PM
-        0.35,  # 3 PM - Second peak starts
-        0.6,   # 4 PM
-        0.6,  # 5 PM
-        0.5,  # 6 PM - Second peak ends
-        0.4,  # 7 PM
-        0.3,  # 8 PM
-        0.15,  # 9 PM
-        0.1,  # 10 PM
-        0.09   # 11 PM
-    ])
-    hour_probabilities /= hour_probabilities.sum()
-    num_ranges = random.randint(1, max_ranges)
-    durations = np.random.dirichlet(np.ones(num_ranges)) * total_active_hours
-    active_time_ranges = []
-    for duration in durations:
-        # Choose a start hour based on the probability distribution
-        start_hour = np.random.choice(range(hours_in_day), p=hour_probabilities)
-        end_hour = (start_hour + duration) % hours_in_day
-        # Ensure end_hour is within 24 hours
-        if end_hour < start_hour:
-            # Time range crosses midnight
-            active_time_ranges.append((start_hour, 24))
-            active_time_ranges.append((0, end_hour))
-        else:
-            active_time_ranges.append((start_hour, end_hour))
-
-    # flatten the list in case of crossing midnight
-    merged_ranges = []
-    for start, end in active_time_ranges:
-        if start < end:
-            merged_ranges.append((start, end))
-        else:
-            # Split the range at midnight
-            merged_ranges.append((start, 24))
-            merged_ranges.append((0, end))
-
-    merged_ranges = merge_time_ranges(merged_ranges)
-    if len(merged_ranges) > max_ranges:
-        merged_ranges = merged_ranges[:max_ranges]
-    return merged_ranges
-
-def merge_time_ranges(ranges):
-    """Merge overlapping time ranges."""
-    if not ranges:
-        return []
-    ranges.sort(key=lambda x: x[0])
-    merged = [ranges[0]]
-    for current in ranges[1:]:
-        prev_start, prev_end = merged[-1]
-        curr_start, curr_end = current
-        if curr_start <= prev_end:
-            # Overlapping ranges, merge them
-            merged[-1] = (prev_start, max(prev_end, curr_end))
-        else:
-            merged.append(current)
-    return merged
-
 class Participant:
     #adds new participant to graph
-    def __init__(self, graph, node_id, type, id=0, meters_per_sec=10, active_time_ranges=None):
+    def __init__(self, graph, node_id, type, id=0, meters_per_sec=10):
         node = graph.nodes[node_id]
+        self.active_time = 0
         self.graph = graph
         self.x = node.x
         self.y = node.y
@@ -100,26 +23,123 @@ class Participant:
         self.meters_per_sec = meters_per_sec
         self.total_dist = 1 #some init val to avoid zero div
         self.total_meters = 1#some init val to avoid zero div
-        if active_time_ranges is None:
-            self.active_time_ranges = generate_active_time_ranges()
-        else:
-            self.active_time_ranges = active_time_ranges
 
-    def is_active(self, current_time):
-        for start_time, end_time in self.active_time_ranges:
-            if start_time <= end_time:
-                if start_time <= current_time < end_time:
-                    return True
+    def refresh_active_time(self):
+        day_time = self.graph.day_time
+        variance = random.randint(-1, 1)
+        if self.type == "car":
+            if 7 <= day_time < 10 or 17 <= day_time < 20:
+                base_active_time = random.randint(6, 8)
             else:
-                # Time range crosses midnight
-                if current_time >= start_time or current_time < end_time:
-                    return True
-        return False
+                base_active_time = random.randint(2, 5)
+        elif self.type == "truck":
+            if day_time < 6 or day_time > 20:
+                base_active_time = random.randint(5, 8)
+            else:
+                base_active_time = random.randint(2, 4)
+        elif self.type == "foot":
+            if 6 <= day_time < 20:
+                base_active_time = random.randint(3, 6)
+            else:
+                base_active_time = random.randint(1, 3)
+        elif self.type == "bicycle":
+            if 8 <= day_time < 18:
+                base_active_time = random.randint(4, 7)
+            else:
+                base_active_time = random.randint(1, 3)
+        elif self.type == "motor_bike":
+            if 6 <= day_time < 22:
+                base_active_time = random.randint(4, 6)
+            else:
+                base_active_time = random.randint(2, 5)
+        if self.month in [5, 6, 7, 8]:
+            base_active_time += 1
+        elif self.month in [11, 0, 1]:
+            base_active_time -= 1
+        return max(base_active_time + variance, 1)
+
+    def traffic_distribution(self) -> dict:
+        #todo: use weather
+        weather = self.graph.weather
+        weather_types = ["rain", "sunny", "hot", "freezing"]
+        day = self.graph.day
+        month = self.graph.month
+        if not (0 <= day < 30) or not (0 <= month < 12):
+            raise ValueError("invalid date")
+        distribution = {
+            "car": 0.3,
+            "truck": 0.03,
+            "foot": 0.37,
+            "bicycle": 0.22,
+            "motor_bike": 0.08,
+        }
+        if 5 <= month <= 8:
+            distribution["bicycle"] += 0.15
+            distribution["foot"] += 0.15
+            distribution["car"] -= 0.2
+        elif month == 11 or month <= 1:
+            distribution["car"] += 0.3
+            distribution["bicycle"] -= 0.15
+            distribution["foot"] -= 0.15
+        if day % 7 < 5:
+            distribution["truck"] += 0.02
+            distribution["car"] += 0.08
+            distribution["foot"] -= 0.1
+        else:
+            distribution["bicycle"] += 0.1
+            distribution["foot"] += 0.03
+            distribution["truck"] -= 0.13
+        total = sum(distribution.values())
+        distribution = {k: v / total for k, v in distribution.items()}
+        print(distribution)
+        return distribution
+
+    def traffic_activity(self):
+        p_morning = 0.6
+        sigma_morning = 1.5
+        p_noon = 0.35
+        sigma_noon = 1.0
+        p_evening = 0.6
+        sigma_evening = 1.5
+        baseline = 0.05
+        t = self.graph.day_time
+        y = (p_morning * np.exp(-((t - 8) ** 2) / (2 * sigma_morning ** 2)) +
+             p_noon * np.exp(-((t - 12) ** 2) / (2 * sigma_noon ** 2)) +
+             p_evening * np.exp(-((t - 17) ** 2) / (2 * sigma_evening ** 2)) +
+             baseline)
+        return y
+
+    def is_active(self, move=False):
+        if self.active_time:
+            if move:
+                self.active_time -= 1
+            return True
+        if not move:
+            return False
+        chance = self.traffic_activity()
+        if random.random() > chance:
+            return False
+        self.active_time = random.randint(4, 8)
+        distribution = self.traffic_distribution()
+
+        types = list(distribution.keys())
+        probabilities = list(distribution.values())
+        self.type = random.choices(types, weights=probabilities, k=1)[0]
+        if self.type == "car" or self.type == "truck" or self.type == "motor_bike":
+            self.meters_per_sec = 10
+        elif self.type == "bicycle":
+            self.meters_per_sec = 3
+        elif self.type == "foot":
+            self.meters_per_sec = 1
+        return True
 
     #participant changes destination goal(used when prev destionation was reached)
     def new_target(self):
         possible_targets = [neighbor for neighbor in self.target.neighbors if neighbor.id != self.cur.id]
         if not possible_targets:
+            old_target = self.target
+            self.target = self.cur
+            self.cur = old_target
             self.distance_meters = 0
             self.passed_meters = 0
             return
@@ -150,6 +170,9 @@ class Participant:
 
     #participant moves the amount of his speed * time
     def move(self, time=1, speed_scala=1):
+        if not self.is_active(move=True):
+            return
+        self.active_time -= time
         if self.distance_meters <= 0:
             self.new_target()
         if self.distance_meters <= 0:
@@ -164,12 +187,6 @@ class Participant:
         else:
             self.x = self.cur.x + self.dx_coords * (self.passed_meters / self.total_meters)
             self.y = self.cur.y + self.dy_coords * (self.passed_meters / self.total_meters)
-
-        #print("distance to last node:", self.passed_meters)
-        #print("distance to next node:", self.distance_meters)
-        #
-        #print("x:", self.x, ", y:", self.y)
-
 
 #(sensor)
 #use node.connect() to create edges in a graph
@@ -194,7 +211,7 @@ class Node:
         if not self.is_sensor:
             return detects
         for participant in self.graph.participants:
-            if not participant.is_active(self.graph.day_time):
+            if not participant.is_active():
                 continue
             if participant.target.id == self.id and participant.distance_meters <= radius:
                 detects.append(participant)
@@ -215,7 +232,8 @@ class Graph:
     #too fast speeds will be buggy for small maps
     def __init__(self,
                  #[(type, count, meters per sec), <more types>
-                 participants=[("car", 10, 10)],
+                 #participants=[("car", 10, 10)],
+                 participants=400,
                  #simulation speed
                  speed=1,
                  #where is the simulation:
@@ -226,20 +244,24 @@ class Graph:
         self.center_x = x
         self.center_y = y
         self.day_time = 0
+        self.day = 0
+        self.month = 0
+        self.weather = "sunny"
+        self.weather_duration = 5
 
         self.add_intersections(x, y, radius_meters)
         self.compute_node_distances_and_weights()
         node_ids = list(self.nodes.keys())
         id = 0
-        for participant in participants:
-            type, count, meters_per_sec = participant
-            i = 0
-            while i < count:
-                random_node_id = random.choice(node_ids)
-                participant_obj = Participant(self, random_node_id, type, id, meters_per_sec=meters_per_sec)
-                id += 1
-                i += 1
-                self.participants.append(participant_obj)
+        #for participant in participants:
+        #    type, count, meters_per_sec = participant
+        i = 0
+        while i < participants:
+            random_node_id = random.choice(node_ids)
+            participant_obj = Participant(self, random_node_id, type, id)
+            id += 1
+            i += 1
+            self.participants.append(participant_obj)
 
     def add_intersections(self, center_lat, center_lon, radius_meters=400):
         G = ox.graph_from_point((center_lat, center_lon), dist=radius_meters, network_type='drive')
@@ -276,6 +298,8 @@ class Graph:
     def get_participants_positions(self):
         positions = []
         for participant in self.participants:
+            if not participant.is_active():
+                continue
             participant_info = {
                 'TYPE': participant.type,
                 'ID': participant.id,
@@ -338,14 +362,57 @@ class Graph:
                 print(" no participants in sensor range")
             print("-" * 40)
 
+    def get_enviormental_data(self):
+        data = {}
+        data["HOUR"] = self.day_time
+        data["DAY"] = self.day #0-29
+        data["MONTH"] = self.MONTH #0-11
+        data["WEATHER"] = self.weather #"rain", "sunny", "hot", "freezing"
+        #todo: measure destribution of types
+        destribution = {}
+        data["DESTRIBUTION"] = destribution
+
+    def print_enviormental_data(self):
+        data = self.get_enviormental_data()
+        print(data)
+
     def add_node(self, new_node):
         self.nodes[new_node.id] = new_node
+
+    def weather_prediction(self):
+        day = self.day
+        month = self.month
+        if not (0 <= day < 30) or not (0 <= month < 12):
+            return "Invalid input"
+        weather_types = ["rain", "sunny", "hot", "freezing"]
+        if month in [11, 0, 1]:
+            probabilities = [0.3, 0.2, 0.0, 0.5]  # rain, sunny, hot, freezing
+        elif month in [2, 3, 4]:
+            probabilities = [0.4, 0.4, 0.2, 0.1]
+        elif month in [5, 6, 7]:
+            probabilities = [0.2, 0.5, 0.3, 0.0]
+        elif month in [8, 9, 10]:
+            probabilities = [0.5, 0.3, 0.0, 0.2]
+        weather = random.choices(weather_types, weights=probabilities, k=1)[0]
+        return weather
 
     #advance simulation by 1 simulation second
     def pass_time(self, time=1):
         self.day_time += time
-        self.day_time %= 24
+        if self.day_time >= 24:
+            self.day += 1
+            self.day_time = 0
+        if self.day >= 30:
+            self.month += 1
+            self.day = 0
+        self.month %= 12
+        self.weather_duration -= 1
+        if self.weather_duration <= 0:
+            #todo:
+            self.weather_duration = 5
+
         for participant in self.participants:
+            self.weather = self.weather_prediction()
             participant.move(time, self.speed)
 
     #prints the current cars in sensor ranges
@@ -357,10 +424,11 @@ class Graph:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
 
 def get_large_graph():
-    participant_list = [("car", 400, 10), ("truck", 20, 10), ("foot", 400, 1), ("bicycle", 400, 2), ("motor_bike", 40, 10)]
-    graph = Graph(speed=5, participants=participant_list, x=49.00587, y=8.40162, radius_meters=3000)
+    #"car", "truck","foot", "bicycle","motor_bike"
+    #participant_list = [("car", 400, 10), ("truck", 20, 10), ("foot", 400, 1), ("bicycle", 400, 2), ("motor_bike", 40, 10)]
+    #graph = Graph(speed=5, participants=participant_list, x=49.00587, y=8.40162, radius_meters=3000)
+    graph = Graph(speed=5, participants=600, x=49.00587, y=8.40162, radius_meters=3000)
     return graph
-
 
 
 if __name__ == '__main__':
@@ -377,7 +445,6 @@ if __name__ == '__main__':
         graph.pass_time()
         #graph.print_participants_positions()
         #graph.print_sensor_data(10)
-
         passed_time += 1
         print("passed time: ", passed_time)
         print("day time: ", graph.day_time)
