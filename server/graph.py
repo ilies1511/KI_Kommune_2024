@@ -117,26 +117,26 @@ class Graph:
     #set the speed to control the speed of the simulation
     #(1-> 1simulation sec/1real sec)
     #too fast speeds will be buggy for small maps
-    def __init__(self, speed=1, car_count=10):
+    def __init__(self, speed=1, car_count=10, x=49.007706, y=8.394864, radius_meters=400):
         self.speed = speed
         self.nodes = {}
         self.participants = []
 
-        self.add_intersections(49.007706, 8.394864)
-        coordinates = [
-            ("Karlstraße-Amalienstraße", 49.0078120, 8.3948930),
-            #Karlstraße-Amalienstraße connetcts to:
-            ("Karlstraße-Waldstraße", 49.008510, 8.394944),
-            ("Waldstraße-Amalienstraße", 49.008081, 8.394169),
-            ("Karlstrase-Sophienstraße", 49.005922, 8.394496),
-            #Waldstraße-Amalienstraße connects to:
-            ("Waldstraße-Sophienstraße", 49.006768, 8.391945),
-            ("Hirschstraße-Amalienstraße", 49.008929, 8.391642),
-            ("Leopoldstraße-Amalienstraße", 49.009607, 8.389724),
-            #Waldstraße-Sophienstraße connects to
-            ("Hirschstraße-Sophienstraße", 49.006939, 8.391441),
-            ("Leopoldstraße-Sophienstraße", 49.007509, 8.389550),
-        ]
+        self.add_intersections(x, y, radius_meters)
+        #coordinates = [
+        #    ("Karlstraße-Amalienstraße", 49.0078120, 8.3948930),
+        #    #Karlstraße-Amalienstraße connetcts to:
+        #    ("Karlstraße-Waldstraße", 49.008510, 8.394944),
+        #    ("Waldstraße-Amalienstraße", 49.008081, 8.394169),
+        #    ("Karlstrase-Sophienstraße", 49.005922, 8.394496),
+        #    #Waldstraße-Amalienstraße connects to:
+        #    ("Waldstraße-Sophienstraße", 49.006768, 8.391945),
+        #    ("Hirschstraße-Amalienstraße", 49.008929, 8.391642),
+        #    ("Leopoldstraße-Amalienstraße", 49.009607, 8.389724),
+        #    #Waldstraße-Sophienstraße connects to
+        #    ("Hirschstraße-Sophienstraße", 49.006939, 8.391441),
+        #    ("Leopoldstraße-Sophienstraße", 49.007509, 8.389550),
+        #]
 
         #for id, lat, lon in coordinates:
         #    self.nodes[id] = Node(self, id, lat, lon)
