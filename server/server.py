@@ -68,34 +68,22 @@ def query_api() -> list[Sensor]:
 
 def get_map_coordinates(sensors: list[Sensor]) -> list[Point]:
 	""" Maras entry point"""
-<<<<<<< HEAD
-	print(len(coordinates))
-=======
 	# check for right format of parameters
 	if len(sensors) != len(coordinates):
 		print("Error: Sensor list length does not equal coordinates list length")
 	
 	# produce list of points
 	points = [Point(coordinates[i], sensors[i]) for i in range(len(sensors))]
->>>>>>> mara
 
 	# return points list
 	return points
 
-<<<<<<< HEAD
-=======
-
->>>>>>> mara
 def move_traffic(points: list[Point]) -> list[Point]:
 	""" Fabians part"""
 	pass
 
 
-<<<<<<< HEAD
-def enrich_map(coordinates: list[Point]) -> Map:
-=======
 def enrich_map(points: list[Point]) -> Map:
->>>>>>> mara
 	""" Silvesters entry point"""
 	pass
 
@@ -112,18 +100,6 @@ def get_data(handler):
 	# simulate traffic
 	points = move_traffic(points)
 
-<<<<<<< HEAD
-	# get sensor data from api
-	sensors = query_api()
-
-	# get coordinates and pair them with sensors
-	points = get_map_coordinates(sensors)
-
-	# simulate traffic
-	points = move_traffic(points)
-
-=======
->>>>>>> mara
 	# paint points to map
 	response_data = enrich_map(points)
 
