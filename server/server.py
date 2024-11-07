@@ -17,7 +17,7 @@ coordinates = [
     ("Kaiserstraße at Europaplatz", 49.0080, 8.3965),
     ("Karlstraße at Europaplatz", 49.0075, 8.3960),
     ("Douglasstraße at Europaplatz", 49.0085, 8.3955),
-    
+
     # Neighbors of "Kaiserstraße at Europaplatz"
     ("Kronenplatz", 49.0085, 8.4030),
     ("Marktplatz", 49.0080, 8.4000),
@@ -25,7 +25,7 @@ coordinates = [
     # Neighbors of "Karlstraße at Europaplatz"
     ("Mühlburger Tor", 49.0065, 8.3930),
     ("Karlstor", 49.0070, 8.3990),
-    
+
     # Neighbors of "Douglasstraße at Europaplatz"
     ("Lammstraße", 49.0087, 8.3925),
     ("Waldstraße", 49.0092, 8.3970),
@@ -51,7 +51,17 @@ coordinates = [
 ]
 
 class Sensor:
-	pass
+	def __init__(self, entity_id, value, timestamp, count, sensor_type):
+		self.entity_id = entity_id  # Die eindeutige ID des Sensors
+		self.value = value  # Der Wert (z.B. gemessene Geschwindigkeit oder Anzahl der Fahrzeuge)
+		self.timestamp = timestamp  # Der Zeitstempel der Messung
+		self.count = count  # Die Anzahl des Typs (z.B. 5 Autos)
+		self.type = sensor_type  # Der Typ des Objekts (z.B. "Car", "Bus", "Bike")
+
+	def __repr__(self):
+		# Gibt eine benutzerfreundliche Darstellung des Sensor-Objekts zurück
+		return (f"Sensor(entity_id={self.entity_id}, value={self.value}, "
+				f"timestamp={self.timestamp}, count={self.count}, type={self.type})")
 
 @dataclass
 class Point:
