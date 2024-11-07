@@ -14,7 +14,7 @@
     <h1>The traffic in Karlsruhe at the moment</h1>
     <h3>Watch people, cars and bikes in real time</h3>
 
-    <iframe id="map" width="100%" height="500px" frameborder="0"></iframe>
+    <iframe id="map" source="map.html" width="100%" height="500px" frameborder="0"></iframe>
 
     <script>
         let iframe = document.getElementById("map");
@@ -26,9 +26,9 @@
                 return response.text();
             })
             .then(html => {
-                iframe.contentDocument.open();
-                iframe.contentDocument.write(html);
-                iframe.contentDocument.close();     
+                // iframe.contentDocument.open();
+                // iframe.contentDocument.write(html);
+                // iframe.contentDocument.close();     
             })
             .catch(error => console.error("Error loading data:", error));
         }, 1000);

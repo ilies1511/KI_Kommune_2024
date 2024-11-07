@@ -35,6 +35,26 @@ class Map:
 	pass
 
 
+def generate_map():
+	sensor_list = graph.get_sensor_list()
+	coordinates = [[coordinate["X"], coordinate["Y"]] for coordinate, _ in sensor_list]
+
+	my_map = folium.Map(location=coordinates[0], zoom_start=15)
+
+	# Add all coordinates as CircleMarkers
+	for coord in coordinates:
+		folium.CircleMarker(
+			location=coord,
+			radius=5,
+			color="blue",
+			fill=True,
+			fill_color="blue"
+		).add_to(my_map)
+
+	# Save the map to an HTML file
+	my_map.save("map.html")
+
+
 def query_api() -> list[Sensor]:
 	""" Ilies entry point"""
 	pass
@@ -56,36 +76,20 @@ def get_map_coordinates(sensors: list[Sensor]) -> list[Point]:
 def enrich_map():
 	""" Silvesters entry point"""
 
-	# test
-	sensor_list = graph.get_sensor_list()
-	coordinates = [[coordinate["X"], coordinate["Y"]] for coordinate, _ in sensor_list]
+	# # add traffic members
+	# for participant in graph.get_participants_positions():
+	# 	color = "black"
+	# 	if participant["TYPE"] == "car":
+	# 		color = "red"
+	# 	folium.Marker(
+	# 		location=[participant["X"], participant["Y"]],
+	# 		icon=folium.CustomIcon(car_icon_url, icon_size=(25, 25))
+	# 	).add_to(my_map)
 
-	my_map = folium.Map(location=coordinates[0], zoom_start=15)
+	# # Get the HTML representation as a string
+	# map_html = my_map.get_root().render()
 
-	# Add all coordinates as CircleMarkers
-	for coord in coordinates:
-		folium.CircleMarker(
-			location=coord,
-			radius=5,
-			color="blue",
-			fill=True,
-			fill_color="blue"
-		).add_to(my_map)
-
-	# add traffic members
-	for participant in graph.get_participants_positions():
-		color = "black"
-		if participant["TYPE"] == "car":
-			color = "red"
-		folium.Marker(
-			location=[participant["X"], participant["Y"]],
-			icon=folium.CustomIcon(car_icon_url, icon_size=(25, 25))
-		).add_to(my_map)
-
-	# Get the HTML representation as a string
-	map_html = my_map.get_root().render()
-
-	return map_html
+	return None
 
 
 def get_data(handler):
@@ -115,7 +119,8 @@ def get_data(handler):
 	handler.end_headers()
 
 	# Write JSON response
-	handler.wfile.write(response_data.encode('utf-8'))
+	# handler.wfile.write(response_data.encode('utf-8'))
+	# handler.wfile.write(response_data.encode('utf-8'))
 
 class CustomHTTPRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -124,6 +129,8 @@ class CustomHTTPRequestHandler(SimpleHTTPRequestHandler):
         else:
             super().do_GET()
 
+# generate the base map html file
+generate_map()
 
 # Create a handler to handle HTTP requests
 handler = CustomHTTPRequestHandler
