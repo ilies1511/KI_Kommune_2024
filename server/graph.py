@@ -3,7 +3,7 @@ import osmnx as ox
 import math
 import random
 import time
-
+import diagram
 class Participant:
     #adds new participant to graph
     def __init__(self, graph, node_id, type, id=0, meters_per_sec=10):
@@ -257,22 +257,31 @@ class Graph:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
 
 def get_large_graph():
-    participant_list = [("car", 400, 10), ("truck", 20, 10), ("foot", 40, 1), ("bicycle", 40, 2), ("motor_bike", 4, 10)]
+    participant_list = [("car", 4000, 10), ("truck", 200, 10), ("foot", 400, 1), ("bicycle", 400, 2), ("motor_bike", 400, 10)]
     graph = Graph(speed=5, participants=participant_list, x=49.00587, y=8.40162, radius_meters=3000)
     return graph
+
 
 
 if __name__ == '__main__':
     #graph = Graph()
     graph = get_large_graph()
-    graph.print_detects()
+    #graph.print_detects()
     passed_time = 0
+    ids_in_range = diagram.get_ids(graph)
+    all_time_stamps = []
     while 1:
+        all_time_stamps.append(diagram.filter_sensors(graph, ids_in_range))
+        diagram.animation1(all_time_stamps)
+
         graph.pass_time()
-        graph.print_participants_positions()
-        graph.print_detects(10)
+        #graph.print_participants_positions()
+        #graph.print_sensor_data(10)
 
         passed_time += 1
         print("passed time: ", passed_time)
         time.sleep(1)
+
+
+
 
