@@ -172,26 +172,79 @@ class Graph:
         self.nodes["Karl-Wilhelm-Straße at Durlacher Tor"].connect(self.nodes["Schlossgarten"])
         self.nodes["Karl-Wilhelm-Straße at Durlacher Tor"].connect(self.nodes["Rintheimer Straße"])
         i = 0
+        node_ids = list(self.nodes.keys())
         while i < car_count:
-            car = Participant(self, "Europaplatz", "car", i)
+            random_node_id = random.choice(node_ids)
+            car = Participant(self, random_node_id, "car", i)
             self.participants.append(car)
             i += 1
 
     def get_participants_positions(self):
-        #todo
-        pass
+        positions = []
+        for participant in self.participants:
+            participant_info = {
+                'TYPE': participant.type,
+                'ID': participant.id,
+                'X': participant.x,
+                'Y': participant.y,
+                'Current Node': participant.cur.id,
+                'Target Node': participant.target.id,
+                'Distance to Target': participant.distance_meters,
+            }
+            positions.append(participant_info)
+        return positions
 
-    def get_sensor_list(self):
-        #returns a list of
-        #[
-        #   (
-        #       {SENSOR_ID=.., X_COORDS=.., Y_COORDS=...},
-        #       [{PARTICIPENT_TYPE=.., PARTICIPANT_ID=...,PARTICIPANT_X_COORDS= PARTICIPANT_Y_COORDS=..},...]
-        #   ),...more pairs
-        #]
-        #todo
-        
-            
+    def print_participants_positions(self):
+        positions = self.get_participants_positions()
+        print("Current Participants Positions:")
+        for participant_info in positions:
+            print(f"Type: {participant_info['TYPE']}, ID: {participant_info['ID']}, "
+                  f"X: {participant_info['X']}, Y: {participant_info['Y']}, "
+                  f"Current Node: {participant_info['Current Node']}, "
+                  f"Target Node: {participant_info['Target Node']}, "
+                  f"Distance to Target: {participant_info['Distance to Target']:.2f} meters")
+        print("-" * 40)
+
+    def get_sensor_list(self, sensor_meter_radius=10):
+        sensor_list = []
+        for node in self.nodes.values():
+            if node.is_sensor:
+                detects = node.detect(sensor_meter_radius)
+                detected_participants = [
+                    {
+                        "TYPE": participant.type,
+                        "ID": participant.id,
+                        "X": participant.x,
+                        "Y": participant.y,
+                    }
+                    for participant in detects
+                ]
+                sensor_info = {
+                    "ID": node.id,
+                    "X": node.x,
+                    "Y": node.y,
+                }
+                sensor_list.append((sensor_info, detected_participants))
+        return sensor_list
+
+    def print_sensor_data(self, radius=10):
+        sensor_list = self.get_sensor_list(radius)
+        for sensor_info, detected_participants in sensor_list:
+            if not detected_participants:
+                continue  # Use continue instead of return
+            print(f"Sensor ID: {sensor_info['ID']}")
+            print(f"  Coordinates: ({sensor_info['X']}, {sensor_info['Y']})")
+            if detected_participants:
+                print("  Detected Participants:")
+                for participant in detected_participants:
+                    print(f"    - Type: {participant['TYPE']}, "
+                          f"ID: {participant['ID']}, "
+                          f"Coordinates: ({participant['X']}, {participant['Y']})")
+            else:
+                print(" no participants in sensor range")
+            print("-" * 40)
+
+
     def add_node(self, new_node):
         self.nodes[new_node.id] = new_node
 
@@ -201,11 +254,13 @@ class Graph:
             participant.move(time, self.speed)
 
     #prints the current cars in sensor ranges
-    def print_detects(self, range=1):
+    #old version, of print_sensor_data, should print the same cases as print_sensor_data
+    def print_detects(self, range=10):
         for node in self.nodes.values():
             detects = node.detect(range)
             for participant in detects:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
+
 
 if __name__ == '__main__':
     graph = Graph()
@@ -213,7 +268,9 @@ if __name__ == '__main__':
     passed_time = 0
     while 1:
         graph.pass_time()
+        graph.print_participants_positions()
         graph.print_detects(10)
+
         passed_time += 1
         print("passed time: ", passed_time)
         time.sleep(1)
