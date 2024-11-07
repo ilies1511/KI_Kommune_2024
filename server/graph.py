@@ -1,4 +1,5 @@
 from typing import List, Dict
+import osmnx as ox
 import math
 import random
 import time
@@ -121,6 +122,7 @@ class Graph:
         self.nodes = {}
         self.participants = []
 
+        self.add_intersections(49.007706, 8.394864)
         coordinates = [
             ("Karlstraße-Amalienstraße", 49.0078120, 8.3948930),
             #Karlstraße-Amalienstraße connetcts to:
@@ -135,20 +137,21 @@ class Graph:
             ("Hirschstraße-Sophienstraße", 49.006939, 8.391441),
             ("Leopoldstraße-Sophienstraße", 49.007509, 8.389550),
         ]
-        for id, lat, lon in coordinates:
-            self.nodes[id] = Node(self, id, lat, lon)
-        self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstraße-Waldstraße"])
 
-        self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstraße-Waldstraße"])
-        self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Waldstraße-Amalienstraße"])
-        self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstrase-Sophienstraße"])
+        #for id, lat, lon in coordinates:
+        #    self.nodes[id] = Node(self, id, lat, lon)
+        #self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstraße-Waldstraße"])
 
-        self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Waldstraße-Sophienstraße"])
-        self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Hirschstraße-Amalienstraße"])
-        self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Leopoldstraße-Amalienstraße"])
+        #self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstraße-Waldstraße"])
+        #self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Waldstraße-Amalienstraße"])
+        #self.nodes["Karlstraße-Amalienstraße"].connect(self.nodes["Karlstrase-Sophienstraße"])
 
-        self.nodes["Waldstraße-Sophienstraße"].connect(self.nodes["Hirschstraße-Sophienstraße"])
-        self.nodes["Waldstraße-Sophienstraße"].connect(self.nodes["Leopoldstraße-Sophienstraße"])
+        #self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Waldstraße-Sophienstraße"])
+        #self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Hirschstraße-Amalienstraße"])
+        #self.nodes["Waldstraße-Amalienstraße"].connect(self.nodes["Leopoldstraße-Amalienstraße"])
+
+        #self.nodes["Waldstraße-Sophienstraße"].connect(self.nodes["Hirschstraße-Sophienstraße"])
+        #self.nodes["Waldstraße-Sophienstraße"].connect(self.nodes["Leopoldstraße-Sophienstraße"])
 
         i = 0
         node_ids = list(self.nodes.keys())
@@ -157,6 +160,24 @@ class Graph:
             car = Participant(self, random_node_id, "car", i)
             self.participants.append(car)
             i += 1
+
+    def add_intersections(self, center_lat, center_lon, radius_meters=400):
+        G = ox.graph_from_point((center_lat, center_lon), dist=radius_meters, network_type='drive')
+        osm_id_to_node = {}
+        for node_id, node_data in G.nodes(data=True):
+            unique_id = f"node_{node_id}"
+            lat = node_data['y']
+            lon = node_data['x']
+            if unique_id not in self.nodes:
+                node = Node(self, unique_id, lat, lon)
+                osm_id_to_node[node_id] = node
+                self.nodes[unique_id] = node
+
+        for u, v, data in G.edges(data=True):
+            node_u = osm_id_to_node.get(u)
+            node_v = osm_id_to_node.get(v)
+            if node_u and node_v:
+                node_u.connect(node_v)
 
     def get_participants_positions(self):
         positions = []
