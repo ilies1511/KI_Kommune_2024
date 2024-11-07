@@ -49,7 +49,7 @@ def animation1(time_stamps):
 			# 		f"Coordinates: ({detection['X']}, {detection['Y']})")
 		i += 1
 		all_counts.append(counts)
-	if not (i % 20):
+	if not (i % 100):
 		plot_all_counts(all_counts)
 	print(all_counts)
 

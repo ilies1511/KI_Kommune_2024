@@ -4,9 +4,89 @@ import math
 import random
 import time
 import diagram
+import numpy as np
+
+def generate_active_time_ranges():
+    total_active_hours = 8
+    max_ranges = 3
+    hours_in_day = 24
+
+    hour_probabilities = np.array([
+        0.05,  # 0 AM
+        0.09,  # 1 AM
+        0.1,  # 2 AM
+        0.15,  # 3 AM
+        0.2,  # 4 AM
+        0.3,  # 5 AM
+        0.4,  # 6 AM - Peak starts
+        0.5,   # 7 AM
+        0.6,  # 8 AM
+        0.5,  # 9 AM - Peak ends
+        0.4,  # 10 AM
+        0.3,  # 11 AM
+        0.35,  # 12 PM
+        0.4,  # 1 PM - Local minimum
+        0.3,  # 2 PM
+        0.35,  # 3 PM - Second peak starts
+        0.6,   # 4 PM
+        0.6,  # 5 PM
+        0.5,  # 6 PM - Second peak ends
+        0.4,  # 7 PM
+        0.3,  # 8 PM
+        0.15,  # 9 PM
+        0.1,  # 10 PM
+        0.09   # 11 PM
+    ])
+    hour_probabilities /= hour_probabilities.sum()
+    num_ranges = random.randint(1, max_ranges)
+    durations = np.random.dirichlet(np.ones(num_ranges)) * total_active_hours
+    active_time_ranges = []
+    for duration in durations:
+        # Choose a start hour based on the probability distribution
+        start_hour = np.random.choice(range(hours_in_day), p=hour_probabilities)
+        end_hour = (start_hour + duration) % hours_in_day
+        # Ensure end_hour is within 24 hours
+        if end_hour < start_hour:
+            # Time range crosses midnight
+            active_time_ranges.append((start_hour, 24))
+            active_time_ranges.append((0, end_hour))
+        else:
+            active_time_ranges.append((start_hour, end_hour))
+
+    # flatten the list in case of crossing midnight
+    merged_ranges = []
+    for start, end in active_time_ranges:
+        if start < end:
+            merged_ranges.append((start, end))
+        else:
+            # Split the range at midnight
+            merged_ranges.append((start, 24))
+            merged_ranges.append((0, end))
+
+    merged_ranges = merge_time_ranges(merged_ranges)
+    if len(merged_ranges) > max_ranges:
+        merged_ranges = merged_ranges[:max_ranges]
+    return merged_ranges
+
+def merge_time_ranges(ranges):
+    """Merge overlapping time ranges."""
+    if not ranges:
+        return []
+    ranges.sort(key=lambda x: x[0])
+    merged = [ranges[0]]
+    for current in ranges[1:]:
+        prev_start, prev_end = merged[-1]
+        curr_start, curr_end = current
+        if curr_start <= prev_end:
+            # Overlapping ranges, merge them
+            merged[-1] = (prev_start, max(prev_end, curr_end))
+        else:
+            merged.append(current)
+    return merged
+
 class Participant:
     #adds new participant to graph
-    def __init__(self, graph, node_id, type, id=0, meters_per_sec=10):
+    def __init__(self, graph, node_id, type, id=0, meters_per_sec=10, active_time_ranges=None):
         node = graph.nodes[node_id]
         self.graph = graph
         self.x = node.x
@@ -20,6 +100,21 @@ class Participant:
         self.meters_per_sec = meters_per_sec
         self.total_dist = 1 #some init val to avoid zero div
         self.total_meters = 1#some init val to avoid zero div
+        if active_time_ranges is None:
+            self.active_time_ranges = generate_active_time_ranges()
+        else:
+            self.active_time_ranges = active_time_ranges
+
+    def is_active(self, current_time):
+        for start_time, end_time in self.active_time_ranges:
+            if start_time <= end_time:
+                if start_time <= current_time < end_time:
+                    return True
+            else:
+                # Time range crosses midnight
+                if current_time >= start_time or current_time < end_time:
+                    return True
+        return False
 
     #participant changes destination goal(used when prev destionation was reached)
     def new_target(self):
@@ -99,6 +194,8 @@ class Node:
         if not self.is_sensor:
             return detects
         for participant in self.graph.participants:
+            if not participant.is_active(self.graph.day_time):
+                continue
             if participant.target.id == self.id and participant.distance_meters <= radius:
                 detects.append(participant)
             elif participant.cur.id == self.id and participant.passed_meters <= radius:
@@ -246,8 +343,8 @@ class Graph:
 
     #advance simulation by 1 simulation second
     def pass_time(self, time=1):
-        self.time += time
-        self.time %= 24
+        self.day_time += time
+        self.day_time %= 24
         for participant in self.participants:
             participant.move(time, self.speed)
 
@@ -260,7 +357,7 @@ class Graph:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
 
 def get_large_graph():
-    participant_list = [("car", 400, 10), ("truck", 20, 10), ("foot", 40, 1), ("bicycle", 40, 2), ("motor_bike", 40, 10)]
+    participant_list = [("car", 400, 10), ("truck", 20, 10), ("foot", 400, 1), ("bicycle", 400, 2), ("motor_bike", 40, 10)]
     graph = Graph(speed=5, participants=participant_list, x=49.00587, y=8.40162, radius_meters=3000)
     return graph
 
@@ -283,7 +380,8 @@ if __name__ == '__main__':
 
         passed_time += 1
         print("passed time: ", passed_time)
-        time.sleep(1)
+        print("day time: ", graph.day_time)
+        #time.sleep(1)
 
 
 
