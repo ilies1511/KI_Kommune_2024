@@ -21,11 +21,18 @@
         let old_markers = [];
 
         function addMarker(my_map, coord) {
-            let iconUrl = "car.png";
-            
+            console.log(coord);
+
+            let iconUrl;
+            iconUrl = "default.png";
+            if (coord.TYPE == "car")
+                iconUrl = "car.png";
+            if (coord.TYPE == "foot")
+                iconUrl = "foot.png";
             const icon = L.icon({
                 iconUrl: iconUrl,
-                iconSize: [25, 25]
+                iconSize: [25, 25],
+                opacity: 0
             });
 
             let marker = L.marker([coord.X, coord.Y], { icon: icon });
@@ -49,7 +56,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    const coordinates = data.map(({ X, Y }) => ({ X, Y }));
+                    const coordinates = data.map(({ X, Y, TYPE }) => ({ X, Y, TYPE }));
 
                     clearMarkers(my_map);
 

@@ -257,8 +257,8 @@ class Graph:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
 
 def get_large_graph():
-    participant_list = [("car", 400, 10), ("truck", 20, 10), ("foot", 40, 1), ("bicycle", 40, 2), ("motor_bike", 4, 10)]
-    graph = Graph(speed=5, participants=participant_list, x=49.00587, y=8.40162, radius_meters=3000)
+    participant_list = [("car", 40, 10), ("truck", 20, 10), ("foot", 40, 1), ("bicycle", 40, 2), ("motor_bike", 4, 10)]
+    graph = Graph(speed=5, participants=participant_list, x=49.00587, y=8.40162, radius_meters=800)
     return graph
 
 

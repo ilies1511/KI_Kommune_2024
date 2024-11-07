@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 import folium
 from typing import List
-from graph import Graph
+from graph import Graph, get_large_graph
 
 
 # Define the server address and port
@@ -11,7 +11,7 @@ HOST = 'localhost'
 PORT = 8000
 
 # define graph and image urls
-graph = Graph()
+graph = get_large_graph()
 car_icon_url = "car.png"
 
 class Sensor:
@@ -32,7 +32,7 @@ def generate_map():
 	sensor_list = graph.get_sensor_list()
 	coordinates = [[coordinate["X"], coordinate["Y"]] for coordinate, _ in sensor_list]
 
-	my_map = folium.Map(location=coordinates[0], zoom_start=15)
+	my_map = folium.Map(location=[49.00587, 8.40162], zoom_start=15)
 
 	# Add all coordinates as CircleMarkers
 	for coord in coordinates:
@@ -55,7 +55,6 @@ def query_api() -> list[Sensor]:
 
 def enrich_map():
 	""" Silvesters entry point"""
-
 	# add traffic members
 	return graph.get_participants_positions()
 
