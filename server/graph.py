@@ -246,8 +246,8 @@ class Graph:
 
     #advance simulation by 1 simulation second
     def pass_time(self, time=1):
-        self.time += time
-        self.time %= 24
+        self.day_time += time
+        self.day_time %= 24
         for participant in self.participants:
             participant.move(time, self.speed)
 
