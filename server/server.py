@@ -10,6 +10,7 @@ from graph import Graph
 HOST = 'localhost'
 PORT = 8000
 
+# define graph and image urls
 graph = Graph()
 car_icon_url = "car.png"
 
@@ -25,14 +26,6 @@ class Sensor:
 		# Gibt eine benutzerfreundliche Darstellung des Sensor-Objekts zurück
 		return (f"Sensor(entity_id={self.entity_id}, value={self.value}, "
 				f"timestamp={self.timestamp}, count={self.count}, type={self.type})")
-
-@dataclass
-class Point:
-	coordinate: tuple
-	sensor: Sensor
-
-class Map:
-	pass
 
 
 def generate_map():
@@ -50,7 +43,7 @@ def generate_map():
 			fill=True,
 			fill_color="blue"
 		).add_to(my_map)
-
+	
 	# Save the map to an HTML file
 	my_map.save("map.html")
 
@@ -60,47 +53,16 @@ def query_api() -> list[Sensor]:
 	pass
 
 
-def get_map_coordinates(sensors: list[Sensor]) -> list[Point]:
-	""" Maras entry point"""
-	# check for right format of parameters
-	# if len(sensors) != len(coordinates):
-	# 	print("Error: Sensor list length does not equal coordinates list length")
-	
-	# produce list of points
-	points = [Point(coordinates[i], sensors[i]) for i in range(len(sensors))]
-
-	# return points list
-	return points
-
-
 def enrich_map():
 	""" Silvesters entry point"""
 
-	# # add traffic members
-	# for participant in graph.get_participants_positions():
-	# 	color = "black"
-	# 	if participant["TYPE"] == "car":
-	# 		color = "red"
-	# 	folium.Marker(
-	# 		location=[participant["X"], participant["Y"]],
-	# 		icon=folium.CustomIcon(car_icon_url, icon_size=(25, 25))
-	# 	).add_to(my_map)
-
-	# # Get the HTML representation as a string
-	# map_html = my_map.get_root().render()
-
-	return None
+	# add traffic members
+	return graph.get_participants_positions()
 
 
 def get_data(handler):
-	# here we fill the response with test data
-	# response_data = query_api()
-
 	# get sensor data from api
 	sensors = query_api()
-
-	# get coordinates and pair them with sensors
-	# points = get_map_coordinates(sensors)
 
 	# simulate traffic
 	graph.pass_time()
@@ -109,7 +71,7 @@ def get_data(handler):
 	response_data = enrich_map()
 
 	# print sensor data
-	graph.print_sensor_data()
+	# graph.print_sensor_data()
 
 	# Send response status
 	handler.send_response(200)
@@ -119,8 +81,9 @@ def get_data(handler):
 	handler.end_headers()
 
 	# Write JSON response
-	# handler.wfile.write(response_data.encode('utf-8'))
-	# handler.wfile.write(response_data.encode('utf-8'))
+	json_response = json.dumps(response_data)
+	handler.wfile.write(json_response.encode('utf-8'))
+
 
 class CustomHTTPRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):

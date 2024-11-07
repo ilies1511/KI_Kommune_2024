@@ -117,7 +117,7 @@ class Graph:
     #set the speed to control the speed of the simulation
     #(1-> 1simulation sec/1real sec)
     #too fast speeds will be buggy for small maps
-    def __init__(self, speed=1, car_count=10, x=49.007706, y=8.394864, radius_meters=400)):
+    def __init__(self, speed=1, car_count=10, x=49.007706, y=8.394864, radius_meters=400):
         self.speed = speed
         self.nodes = {}
         self.participants = []
