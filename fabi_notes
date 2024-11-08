@@ -1,0 +1,22 @@
+Idea:
+Simulation testing for on the edge IOT traffic sensors.
+
+Building infrastructure for anything on a city level will be a costly investment.
+Doing simulationts that give insight in how sensors will perform in certain areas before hand can improve the actual impact hugely.
+Allready installed sensors can be improved or develop an advanced traffic simulation model that helps future sensor installations.
+
+Simulations can show underperforming but also over performing sensors which is ideal input for machine learning algoryhtems to determine the ideal setup conditions for Sensors.
+
+our simultion is influenced by a bunch of diffrent paramters that influence traffic participants diffrently:
+-traffic hotspots
+-weather
+-traffic acifty levels at diffrent times of a day
+-time of month/year
+currently working on:
+-closed roads duo to construction or accidents
+-events that attrackt a lot of people
+
+other future cool influences to add:
+-
+
+

@@ -5,6 +5,9 @@ import random
 import time
 import diagram
 import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 class Participant:
     #adds new participant to graph
@@ -24,75 +27,7 @@ class Participant:
         self.total_dist = 1 #some init val to avoid zero div
         self.total_meters = 1#some init val to avoid zero div
 
-    def refresh_active_time(self):
-        day_time = self.graph.day_time
-        variance = random.randint(-1, 1)
-        if self.type == "car":
-            if 7 <= day_time < 10 or 17 <= day_time < 20:
-                base_active_time = random.randint(6, 8)
-            else:
-                base_active_time = random.randint(2, 5)
-        elif self.type == "truck":
-            if day_time < 6 or day_time > 20:
-                base_active_time = random.randint(5, 8)
-            else:
-                base_active_time = random.randint(2, 4)
-        elif self.type == "foot":
-            if 6 <= day_time < 20:
-                base_active_time = random.randint(3, 6)
-            else:
-                base_active_time = random.randint(1, 3)
-        elif self.type == "bicycle":
-            if 8 <= day_time < 18:
-                base_active_time = random.randint(4, 7)
-            else:
-                base_active_time = random.randint(1, 3)
-        elif self.type == "motor_bike":
-            if 6 <= day_time < 22:
-                base_active_time = random.randint(4, 6)
-            else:
-                base_active_time = random.randint(2, 5)
-        if self.month in [5, 6, 7, 8]:
-            base_active_time += 1
-        elif self.month in [11, 0, 1]:
-            base_active_time -= 1
-        return max(base_active_time + variance, 1)
 
-    def traffic_distribution(self) -> dict:
-        #todo: use weather
-        weather = self.graph.weather
-        weather_types = ["rain", "sunny", "hot", "freezing"]
-        day = self.graph.day
-        month = self.graph.month
-        if not (0 <= day < 30) or not (0 <= month < 12):
-            raise ValueError("invalid date")
-        distribution = {
-            "car": 0.3,
-            "truck": 0.03,
-            "foot": 0.37,
-            "bicycle": 0.22,
-            "motor_bike": 0.08,
-        }
-        if 5 <= month <= 8:
-            distribution["bicycle"] += 0.15
-            distribution["foot"] += 0.15
-            distribution["car"] -= 0.2
-        elif month == 11 or month <= 1:
-            distribution["car"] += 0.3
-            distribution["bicycle"] -= 0.15
-            distribution["foot"] -= 0.15
-        if day % 7 < 5:
-            distribution["truck"] += 0.02
-            distribution["car"] += 0.08
-            distribution["foot"] -= 0.1
-        else:
-            distribution["bicycle"] += 0.1
-            distribution["foot"] += 0.03
-            distribution["truck"] -= 0.13
-        total = sum(distribution.values())
-        distribution = {k: v / total for k, v in distribution.items()}
-        print(distribution)
-        return distribution
 
     def traffic_activity(self):
         p_morning = 0.6
@@ -119,9 +54,8 @@ class Participant:
         chance = self.traffic_activity()
         if random.random() > chance:
             return False
-        self.active_time = random.randint(4, 8)
-        distribution = self.traffic_distribution()
-
+        self.active_time = 5#random.randint(4, 8)
+        distribution = self.graph.traffic_pred
         types = list(distribution.keys())
         probabilities = list(distribution.values())
         self.type = random.choices(types, weights=probabilities, k=1)[0]
@@ -237,10 +171,14 @@ class Graph:
                  #simulation speed
                  speed=1,
                  #where is the simulation:
-                 x=49.007706, y=8.394864, radius_meters=400):
+                 x=49.007706, y=8.394864, radius_meters=400,
+                 loop_year=True#used as an exit conditions for simulation for 1 year
+        ):
+        self.loop_year = loop_year
         self.speed = speed
         self.nodes = {}
         self.participants = []
+        self.year_data = []
         self.center_x = x
         self.center_y = y
         self.day_time = 0
@@ -248,6 +186,7 @@ class Graph:
         self.month = 0
         self.weather = "sunny"
         self.weather_duration = 5
+        self.traffic_pred = self.predict_traffic_distribution()
 
         self.add_intersections(x, y, radius_meters)
         self.compute_node_distances_and_weights()
@@ -262,6 +201,78 @@ class Graph:
             id += 1
             i += 1
             self.participants.append(participant_obj)
+
+    def predict_traffic_distribution(self) -> dict:
+        weather = self.weather
+        #weather_types = ["rain", "sunny", "hot", "freezing"]
+        day = self.day
+        month = self.month
+        if not (0 <= day < 30) or not (0 <= month < 12):
+            raise ValueError("invalid date")
+        distribution = {
+            "car": 0.3,
+            "truck": 0.03,
+            "foot": 0.37,
+            "bicycle": 0.22,
+            "motor_bike": 0.08,
+        }
+        if 5 <= month <= 8:
+            distribution["bicycle"] += 0.1
+            distribution["foot"] += 0.1
+            distribution["car"] -= 0.2
+        elif month == 11 or month <= 1:
+            distribution["car"] += 0.3
+            distribution["bicycle"] -= 0.15
+            distribution["foot"] -= 0.15
+        if day % 7 < 5:
+            distribution["truck"] += 0.02
+            distribution["car"] += 0.08
+            distribution["foot"] -= 0.1
+        else:
+            distribution["foot"] += distribution["truck"]
+            distribution["truck"] = 0
+        # weather
+        if weather == "rain":
+            distribution["car"] += 0.09
+            distribution["foot"] -= 0.05
+            distribution["bicycle"] -= 0.04
+        elif weather == "hot" or weather == "sunny":
+            too_add = distribution["car"] / 2
+            distribution["car"] /= 2
+            distribution["foot"] += too_add / 2
+            distribution["bicycle"] += too_add / 2
+        elif weather == "freezing":
+            too_add = distribution["motor_bike"]
+            distribution["motor_bike"] = 0
+            distribution["car"] += 0.12 + too_add
+            distribution["bicycle"] -= 0.07
+            distribution["foot"] -= 0.05
+        total = sum(distribution.values())
+        for key, val in distribution.items():
+            if val < 0 or val > 1.001:
+                print(key)
+                print(val)
+                print(total)
+                print(weather)
+                print(month)
+                print('')
+        if (total < 0.99 or total > 1.0001):
+            print(total)
+            print(weather)
+            print(month)
+            print('')
+            time.sleep(120)
+
+        #print(total)
+        distribution = {k: v / total for k, v in distribution.items()}
+        if (total < 0.99 or total > 1.0001):
+            print("wrong total after fix")
+        return distribution
+
+    def collect_year_data(self):
+        """Collects DESTRIBUTION_REAL data over time for year progression analysis."""
+        env_data = self.get_enviormental_data()
+        self.year_data.append(env_data)
 
     def add_intersections(self, center_lat, center_lon, radius_meters=400):
         G = ox.graph_from_point((center_lat, center_lon), dist=radius_meters, network_type='drive')
@@ -295,7 +306,28 @@ class Graph:
             normalized_distance = node.distance_to_center / max_distance
             node.weight = 1 + 2 * (1 - normalized_distance)  # from 3(center)-1(outer)
 
-    def get_participants_positions(self):
+    def get_detected_participants_positions(self, sensor_meter_radius=10, from_print=False):
+        detected_positions = []
+        sensor_list = self.get_sensor_list(sensor_meter_radius, from_print)
+        detected_ids = set()
+        for sensor_info, detected_participants in sensor_list:
+            for participant in detected_participants:
+                detected_ids.add(participant["ID"])
+        for participant in self.participants:
+            if participant.id in detected_ids and participant.is_active():
+                participant_info = {
+                    'TYPE': participant.type,
+                    'ID': participant.id,
+                    'X': participant.x,
+                    'Y': participant.y,
+                    'Current Node': participant.cur.id,
+                    'Target Node': participant.target.id,
+                    'Distance to Target': participant.distance_meters,
+                }
+                detected_positions.append(participant_info)
+        return detected_positions
+
+    def get_participants_positions(self, from_print=False):
         positions = []
         for participant in self.participants:
             if not participant.is_active():
@@ -323,7 +355,7 @@ class Graph:
                   f"Distance to Target: {participant_info['Distance to Target']:.2f} meters")
         print("-" * 40)
 
-    def get_sensor_list(self, sensor_meter_radius=10):
+    def get_sensor_list(self, sensor_meter_radius=10, from_print=False):
         sensor_list = []
         for node in self.nodes.values():
             if node.is_sensor:
@@ -362,19 +394,61 @@ class Graph:
                 print(" no participants in sensor range")
             print("-" * 40)
 
+    def get_actual_distribution(self, from_print=False) -> dict:
+        """the actual distribution of participant types using backend data"""
+        participants_data = self.get_participants_positions(from_print)
+        counts = {"car": 0, "truck": 0, "foot": 0, "bicycle": 0, "motor_bike": 0}
+        total_count = 0
+
+        for participant in participants_data:
+            participant_type = participant["TYPE"]
+            if participant_type in counts:
+                counts[participant_type] += 1
+                total_count += 1
+        if total_count > 0:
+            actual_distribution = {k: v / total_count for k, v in counts.items()}
+        else:
+            actual_distribution = {k: 0 for k in counts.keys()}
+
+        return actual_distribution
+
+    def get_measured_distribution(self, radius=10, from_print=False) -> dict:
+        """the distribution based of the sensor reads"""
+        sensor_data = self.get_sensor_list(radius, from_print)
+        counts = {"car": 0, "truck": 0, "foot": 0, "bicycle": 0, "motor_bike": 0}
+        total_count = 0
+
+        for _, detected_participants in sensor_data:
+            for participant in detected_participants:
+                participant_type = participant["TYPE"]
+                if participant_type in counts:
+                    counts[participant_type] += 1
+                    total_count += 1
+        if total_count > 0:
+            measured_distribution = {k: v / total_count for k, v in counts.items()}
+        else:
+            measured_distribution = {k: 0 for k in counts.keys()}
+        return measured_distribution
+
     def get_enviormental_data(self):
         data = {}
         data["HOUR"] = self.day_time
         data["DAY"] = self.day #0-29
-        data["MONTH"] = self.MONTH #0-11
+        data["MONTH"] = self.month #0-11
         data["WEATHER"] = self.weather #"rain", "sunny", "hot", "freezing"
-        #todo: measure destribution of types
-        destribution = {}
-        data["DESTRIBUTION"] = destribution
+        #types: "car", "truck", "foot", "bicycle", "motor_bike"
+        data["DESTRIBUTION_REAL"] = self.get_actual_distribution(from_print=True) #dict with key:type,value:float 0-1
+        data["DESTRIBUTION_MEASURED"] = self.get_measured_distribution(from_print=True) #dict with key:type,value:float 0-1
+        return data
 
     def print_enviormental_data(self):
-        data = self.get_enviormental_data()
-        print(data)
+        #data = self.get_enviormental_data()
+        #print(data)
+        #print("REAL:")
+        print(self.get_actual_distribution(from_print=True))
+        #print("MEASURED:")
+        #print(self.get_measured_distribution(from_print=True))
+        #print("")
 
     def add_node(self, new_node):
         self.nodes[new_node.id] = new_node
@@ -399,20 +473,20 @@ class Graph:
     #advance simulation by 1 simulation second
     def pass_time(self, time=1):
         self.day_time += time
+        self.collect_year_data()
         if self.day_time >= 24:
             self.day += 1
             self.day_time = 0
         if self.day >= 30:
             self.month += 1
             self.day = 0
-        self.month %= 12
+        if self.loop_year:
+            self.month %= 12
         self.weather_duration -= 1
         if self.weather_duration <= 0:
-            #todo:
             self.weather_duration = 5
-
-        for participant in self.participants:
             self.weather = self.weather_prediction()
+        for participant in self.participants:
             participant.move(time, self.speed)
 
     #prints the current cars in sensor ranges
@@ -423,33 +497,317 @@ class Graph:
             for participant in detects:
                 print(node.id, ": ", participant.type, "(id: ", participant.id, ")")
 
-def get_large_graph():
-    #"car", "truck","foot", "bicycle","motor_bike"
-    #participant_list = [("car", 400, 10), ("truck", 20, 10), ("foot", 400, 1), ("bicycle", 400, 2), ("motor_bike", 40, 10)]
-    #graph = Graph(speed=5, participants=participant_list, x=49.00587, y=8.40162, radius_meters=3000)
-    graph = Graph(speed=5, participants=600, x=49.00587, y=8.40162, radius_meters=3000)
+    def plot_actual_vs_measured_distribution(self):
+        """Generates a box plot comparing actual vs. measured traffic distribution by type."""
+        year_data = self.year_data
+    
+        # Collect data for plotting
+        data = []
+        for entry in year_data:
+            for traffic_type, real_value in entry['DESTRIBUTION_REAL'].items():
+                measured_value = entry['DESTRIBUTION_MEASURED'].get(traffic_type, 0)
+                data.append({"type": traffic_type, "Distribution": "Real", "value": real_value})
+                data.append({"type": traffic_type, "Distribution": "Measured", "value": measured_value})
+    
+        # Convert data to a DataFrame for easier plotting with Seaborn
+        df = pd.DataFrame(data)
+    
+        try:
+            plt.figure(figsize=(12, 6))
+            sns.boxplot(data=df, x="Distribution", y="value", hue="type")
+            plt.title("Comparison of Actual vs Measured Traffic Distribution by Type")
+            plt.xlabel("Distribution Type")
+            plt.ylabel("Traffic Proportion")
+            plt.legend(title="Traffic Type", bbox_to_anchor=(1.05, 1), loc='upper left')
+            plt.tight_layout()
+            plt.savefig("actual_vs_measured_distribution.png")
+            plt.close()
+            print("Saved plot as 'actual_vs_measured_distribution.png'")
+            
+        except Exception as e:
+            print(f"Error generating actual vs measured distribution plot: {e}")
+
+
+    def plot_year_progression(self):
+        #each day has 24 hours
+        #each month has exacly 30 days
+        """Generates a time series line plot for DESTRIBUTION_REAL and DESTRIBUTION_MEASURED
+        over the simulation year and saves it to 'Impact_of_Year_Progression.png'."""
+
+        # Set up time steps and participant types
+        time_steps = range(len(self.year_data))
+        participant_types = ["car", "foot", "bicycle"]#self.year_data[0]['DESTRIBUTION_REAL'].keys()
+        real_data_by_type = {ptype: [entry['DESTRIBUTION_REAL'][ptype] for entry in self.year_data] for ptype in participant_types}
+        measured_data_by_type = {ptype: [entry['DESTRIBUTION_MEASURED'][ptype] for entry in self.year_data] for ptype in participant_types}
+
+        try:
+            plt.figure(figsize=(12, 8))
+            
+            for ptype in participant_types:
+                plt.plot(time_steps, real_data_by_type[ptype], label=f'Real - {ptype}', linestyle='-', alpha=0.7)
+                plt.plot(time_steps, measured_data_by_type[ptype], label=f'Measured - {ptype}', linestyle='--', alpha=0.7)
+
+            plt.title("Impact of Year Progression on Traffic Trends (Real vs. Measured)")
+            #plt.xlabel("Simulation Time Steps (Hours)")
+            plt.xlabel("Month")
+            plt.ylabel("Distribution Percentage")
+
+            month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            month_positions = [i * 720 for i in range(12)]
+            plt.xticks(month_positions, month_labels)
+
+            plt.legend(title="Participant Type")
+            plt.grid(True)
+
+            # Save to file
+            plt.savefig("Impact_of_Year_Progression.png")
+            plt.close()
+            print("Saved plot as 'Impact_of_Year_Progression.png'.")
+        except Exception as e:
+            print(f"Error generating plot: {e}")
+
+    def plot_hourly_traffic_intensity(self):
+        year_data = self.year_data
+        """Generates a line plot showing hourly traffic intensity for cars and combined foot/bicycle group."""
+    
+        # Data aggregation: Summing values for each hour across days and months for "car" and combined "foot"/"bicycle"
+        hourly_data = {'HOUR': [], 'Real_Car': [], 'Measured_Car': [], 'Real_FootBicycle': [], 'Measured_FootBicycle': []}
+        hours_in_day = 24
+    
+        # Aggregating hourly data across all entries
+        for hour in range(hours_in_day):
+            real_car = 0
+            measured_car = 0
+            real_foot_bicycle = 0
+            measured_foot_bicycle = 0
+            
+            # Collecting data only for the current hour
+            for entry in year_data:
+                if entry["HOUR"] == hour:
+                    real_car += entry['DESTRIBUTION_REAL'].get("car", 0)
+                    measured_car += entry['DESTRIBUTION_MEASURED'].get("car", 0)
+                    
+                    # Combine "foot" and "bicycle" into a single group
+                    real_foot_bicycle += entry['DESTRIBUTION_REAL'].get("foot", 0) + entry['DESTRIBUTION_REAL'].get("bicycle", 0)
+                    measured_foot_bicycle += entry['DESTRIBUTION_MEASURED'].get("foot", 0) + entry['DESTRIBUTION_MEASURED'].get("bicycle", 0)
+            
+            # Append aggregated data for each hour
+            hourly_data['HOUR'].append(hour)
+            hourly_data['Real_Car'].append(real_car)
+            hourly_data['Measured_Car'].append(measured_car)
+            hourly_data['Real_FootBicycle'].append(real_foot_bicycle)
+            hourly_data['Measured_FootBicycle'].append(measured_foot_bicycle)
+    
+        # Convert the dictionary to a DataFrame for plotting
+        df = pd.DataFrame(hourly_data)
+    
+        try:
+            # Plotting the hourly data for both real and measured traffic intensities
+            plt.figure(figsize=(12, 6))
+            plt.plot(df['HOUR'], df['Real_Car'], label="Real - Car", linestyle='-', marker='o')
+            plt.plot(df['HOUR'], df['Measured_Car'], label="Measured - Car", linestyle='--', marker='o')
+            plt.plot(df['HOUR'], df['Real_FootBicycle'], label="Real - Foot + Bicycle", linestyle='-', marker='o')
+            plt.plot(df['HOUR'], df['Measured_FootBicycle'], label="Measured - Foot + Bicycle", linestyle='--', marker='o')
+            
+            # Plot aesthetics
+            plt.title("Hourly Traffic Intensity: Real vs. Measured")
+            plt.xlabel("Hour of Day")
+            plt.ylabel("Traffic Intensity (Count)")
+            plt.xticks(range(hours_in_day))
+            plt.legend(title="Traffic Type")
+            plt.grid(True)
+    
+            # Save the plot as a PNG file
+            plt.tight_layout()
+            plt.savefig("hourly_traffic_intensity.png")
+            plt.close()
+            print("Saved plot as 'hourly_traffic_intensity.png'")
+            
+        except Exception as e:
+            print(f"Error generating hourly traffic intensity plot: {e}")
+
+    def plot_weather_impact_on_traffic_distribution(self):
+        """Generates a box plot showing the impact of weather on traffic distribution by type."""
+        year_data = self.year_data
+        # Collect data for plotting
+        data = []
+        for entry in year_data:
+            weather = entry['WEATHER']
+            for traffic_type, real_value in entry['DESTRIBUTION_REAL'].items():
+                data.append({"type": traffic_type, "weather": weather, "distribution": real_value})
+    
+        # Convert data to a DataFrame for easier plotting with Seaborn
+        df = pd.DataFrame(data)
+    
+        try:
+            plt.figure(figsize=(12, 6))
+            sns.boxplot(data=df, x="weather", y="distribution", hue="type")
+            plt.title("Impact of Weather on Traffic Distribution by Type")
+            plt.xlabel("Weather Condition")
+            plt.ylabel("Traffic Distribution Percentage")
+            plt.legend(title="Traffic Type", bbox_to_anchor=(1.05, 1), loc='upper left')
+            plt.tight_layout()
+            plt.savefig("weather_impact_on_traffic_distribution.png")
+            plt.close()
+            print("Saved plot as 'weather_impact_on_traffic_distribution.png'")
+            
+        except Exception as e:
+            print(f"Error generating weather impact on traffic distribution plot: {e}")
+
+    #todo: broken
+    def estimate_co2_emissions_over_year(self):
+        year_data = self.year_data
+        """Generates a line plot showing estimated CO₂ emissions over the year."""
+    
+        # Constants for CO₂ emissions estimation (in grams per unit)
+        emission_factors = {
+            "car": 120,       # grams per unit
+            "motor_bike": 80, # grams per unit
+            "truck": 300      # grams per unit
+        }
+    
+        # Initialize dictionary to store daily CO₂ emissions
+        daily_emissions = {"Day": [], "Month": [], "Estimated_CO2_Emissions": []}
+    
+        # Aggregate daily CO₂ emissions by grouping "car", "motor_bike", and "truck"
+        for entry in year_data:
+            day = entry["DAY"]
+            month = entry["MONTH"]
+            
+            # Estimate emissions for "car", "motor_bike", and "truck" types
+            daily_emission = 0
+            for vehicle_type, density in entry["DESTRIBUTION_REAL"].items():
+                if vehicle_type in emission_factors:
+                    daily_emission += density * emission_factors[vehicle_type]
+    
+            # Store daily emissions data
+            daily_emissions["Day"].append(day + month * 30)  # Sequential day count over the year
+            daily_emissions["Month"].append(month)
+            daily_emissions["Estimated_CO2_Emissions"].append(daily_emission)
+    
+        # Convert data to a DataFrame for plotting
+        df = pd.DataFrame(daily_emissions)
+    
+        try:
+            plt.figure(figsize=(12, 6))
+            plt.plot(df["Day"], df["Estimated_CO2_Emissions"], color='green', marker='o', linestyle='-', alpha=0.7)
+            plt.title("Estimated CO₂ Emissions Over the Year")
+            plt.xlabel("Day of Year")
+            plt.ylabel("Estimated CO₂ Emissions per day(proportional comparison)")
+            
+            # Customize x-axis to show month labels every ~30 days
+            month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            month_positions = [(i * 30) + 15 for i in range(12)]
+            plt.xticks(month_positions, month_labels)
+            
+            plt.grid(True)
+            
+            # Save the plot as a PNG file
+            plt.tight_layout()
+            plt.savefig("estimated_co2_emissions_over_year.png")
+            plt.close()
+            print("Saved plot as 'estimated_co2_emissions_over_year.png'")
+            
+        except Exception as e:
+            print(f"Error generating CO₂ emissions plot: {e}")
+
+    #todo: broken
+    def plot_traffic_volume_by_hour(self):
+        """Generates a bar chart showing the effect of time of day on total traffic volume, comparing real vs. measured data."""
+        year_data = self.year_data
+    
+        # Initialize dictionary to store hourly traffic volume for both real and measured data
+        hourly_volume = {'HOUR': [], 'Real_Volume': [], 'Measured_Volume': []}
+        hours_in_day = 24
+    
+        # Aggregate traffic volume by hour
+        for hour in range(hours_in_day):
+            real_volume = 0
+            measured_volume = 0
+            
+            # Collect traffic data only for the current hour
+            for entry in year_data:
+                if entry["HOUR"] == hour:
+                    # Sum up all traffic participants into a single group
+                    real_volume += sum(entry['DESTRIBUTION_REAL'].values())
+                    measured_volume += sum(entry['DESTRIBUTION_MEASURED'].values())
+    
+            # Store hourly volumes
+            hourly_volume['HOUR'].append(hour)
+            hourly_volume['Real_Volume'].append(real_volume)
+            hourly_volume['Measured_Volume'].append(measured_volume)
+    
+        # Convert data to a DataFrame for easier plotting
+        df = pd.DataFrame(hourly_volume)
+    
+        try:
+            # Plotting the traffic volume by hour for both real and measured data
+            plt.figure(figsize=(12, 6))
+            bar_width = 0.4
+            plt.bar(df['HOUR'] - bar_width / 2, df['Real_Volume'], width=bar_width, label="Real Volume", color='blue', alpha=0.6)
+            plt.bar(df['HOUR'] + bar_width / 2, df['Measured_Volume'], width=bar_width, label="Measured Volume", color='orange', alpha=0.6)
+            
+            # Plot aesthetics
+            plt.title("Effect of Time of Day on Total Traffic Volume (Real vs. Measured)")
+            plt.xlabel("Hour of Day")
+            plt.ylabel("Total Traffic Volume")
+            plt.xticks(range(hours_in_day))
+            plt.legend(title="Data Type")
+            plt.grid(axis='y', linestyle='--', alpha=0.7)
+    
+            # Save the plot as a PNG file
+            plt.tight_layout()
+            plt.savefig("traffic_volume_by_hour.png")
+            plt.close()
+            print("Saved plot as 'traffic_volume_by_hour.png'")
+            
+        except Exception as e:
+            print(f"Error generating traffic volume by hour plot: {e}")
+
+def get_large_graph(loop_year=True):
+    graph = Graph(speed=1, participants=600, x=49.00587, y=8.40162, radius_meters=3000, loop_year=loop_year)
     return graph
 
-
 if __name__ == '__main__':
-    #graph = Graph()
-    graph = get_large_graph()
-    #graph.print_detects()
-    passed_time = 0
-    ids_in_range = diagram.get_ids(graph)
-    all_time_stamps = []
-    while 1:
-        all_time_stamps.append(diagram.filter_sensors(graph, ids_in_range))
-        diagram.animation1(all_time_stamps)
+    graph = get_large_graph(loop_year=False)
+    graph.month = 0
 
+    while graph.month < 12:
         graph.pass_time()
-        #graph.print_participants_positions()
-        #graph.print_sensor_data(10)
-        passed_time += 1
-        print("passed time: ", passed_time)
-        print("day time: ", graph.day_time)
-        #time.sleep(1)
+        #graph.print_enviormental_data()
+        #print("hour:", graph.day_time)
+        print("day:", graph.day)
+        print("month:", graph.month)
+    #todo:
+    #some plots are broken, some have very unclear output formatting some seem good
+    graph.plot_year_progression()
+    graph.plot_actual_vs_measured_distribution()
+    graph.plot_hourly_traffic_intensity()
+    graph.plot_weather_impact_on_traffic_distribution()
+    graph.estimate_co2_emissions_over_year()
+    graph.plot_traffic_volume_by_hour()
 
+    #if __name__ == '__main__':
+    #    #graph = Graph()
+    #    graph = get_large_graph()
+    #    #graph.print_detects()
+    #    passed_time = 0
+    #    ids_in_range = diagram.get_ids(graph)
+    #    all_time_stamps = []
+    #    while 1:
+    #        #all_time_stamps.append(diagram.filter_sensors(graph, ids_in_range))
+    #        #diagram.animation1(all_time_stamps)
+    #
+    #        graph.pass_time()
+    #        #graph.print_participants_positions()
+    #        #graph.print_sensor_data(10)
+    #        passed_time += 1
+    #        #env_data = graph.get_enviormental_data()
+    #        graph.print_enviormental_data()
+    #        #print("passed time: ", passed_time)
+    #        #print("day time: ", graph.day_time)
+    #        #time.sleep(1)
+    #
 
 
 
