@@ -765,7 +765,7 @@ class Graph:
             print(f"Error generating traffic volume by hour plot: {e}")
 
 def get_large_graph(loop_year=True):
-    graph = Graph(speed=1, participants=600, x=49.00587, y=8.40162, radius_meters=3000, loop_year=loop_year)
+    graph = Graph(speed=1, participants=3000, x=49.00587, y=8.40162, radius_meters=1000, loop_year=loop_year)
     return graph
 
 if __name__ == '__main__':
