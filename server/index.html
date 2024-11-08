@@ -13,8 +13,18 @@
 <body>
     <h1>The traffic in Karlsruhe at the moment</h1>
     <h3>Watch people, cars and bikes in real time</h3>
+    <button id="mode">Detect only in sensor vicinity</button>
+    <hr>
 
     <iframe id="map" src="map.html" width="100%" height="500px" frameborder="0"></iframe>
+
+    <script>
+        let toggleMode = false;
+        document.getElementById("mode").addEventListener("click", function() {
+            console.log("Mode button clicked!");
+            toggleMode = true;
+        });
+    </script>
 
     <script>
         let iframe = document.getElementById("map");
@@ -62,6 +72,8 @@
                     return response.json();
                 })
                 .then(data => {
+                    // if (toggleMode) {}
+                    
                     const coordinates = data.map(({ X, Y, TYPE }) => ({ X, Y, TYPE }));
 
                     clearMarkers(my_map);

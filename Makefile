@@ -1,3 +1,3 @@
 default:
 	cd server && \
-	python3 server.py
+	python3.10 server.py

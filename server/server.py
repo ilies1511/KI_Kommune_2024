@@ -30,18 +30,31 @@ class Sensor:
 
 def generate_map():
 	sensor_list = graph.get_sensor_list()
-	coordinates = [[coordinate["X"], coordinate["Y"]] for coordinate, _ in sensor_list]
+	coordinates = [([coordinate["X"], coordinate["Y"]], coordinate["ID"]) for coordinate, _ in sensor_list]
 
 	my_map = folium.Map(location=[49.00587, 8.40162], zoom_start=15)
 
 	# Add all coordinates as CircleMarkers
-	for coord in coordinates:
+	for coord, id_ in coordinates:
+		# create popup html
+		popup_html = f"""
+		<div style="width: 200px; padding: 10px;">
+			<h4 style="margin-bottom: 5px;">{id_}</h4>
+			<p style="margin: 0; color: gray;">{coord[0]}, {coord[1]}</p>
+		</div>
+		"""
+		tooltip_text = f"{id_}: {coord[0]}, {coord[1]}"
+
+
+		# create and add the marker for the sensor
 		folium.CircleMarker(
 			location=coord,
 			radius=5,
 			color="blue",
 			fill=True,
-			fill_color="blue"
+			fill_color="blue",
+			popup=folium.Popup(popup_html, max_width=300),
+			tooltip=tooltip_text
 		).add_to(my_map)
 	
 	# Save the map to an HTML file
