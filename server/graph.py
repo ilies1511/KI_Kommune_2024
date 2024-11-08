@@ -176,6 +176,27 @@ class Graph:
             normalized_distance = node.distance_to_center / max_distance
             node.weight = 1 + 2 * (1 - normalized_distance)  # from 3(center)-1(outer)
 
+    def get_detected_participants_positions(self, sensor_meter_radius=10, from_print=False):
+        detected_positions = []
+        sensor_list = self.get_sensor_list(sensor_meter_radius, from_print)
+        detected_ids = set()
+        for sensor_info, detected_participants in sensor_list:
+            for participant in detected_participants:
+                detected_ids.add(participant["ID"])
+        for participant in self.participants:
+            if participant.id in detected_ids and participant.is_active():
+                participant_info = {
+                    'TYPE': participant.type,
+                    'ID': participant.id,
+                    'X': participant.x,
+                    'Y': participant.y,
+                    'Current Node': participant.cur.id,
+                    'Target Node': participant.target.id,
+                    'Distance to Target': participant.distance_meters,
+                }
+                detected_positions.append(participant_info)
+        return detected_positions
+
     def get_participants_positions(self):
         positions = []
         for participant in self.participants:
